@@ -1,0 +1,9 @@
+{
+  "New York": {"conditions": ["Sunny", "Partly Cloudy", "Rain", "Overcast"], "high_f": 68, "low_f": 54},
+  "Los Angeles": {"conditions": ["Sunny", "Sunny", "Partly Cloudy", "Hazy"], "high_f": 78, "low_f": 61},
+  "San Francisco": {"conditions": ["Foggy", "Partly Cloudy", "Sunny", "Windy"], "high_f": 64, "low_f": 52},
+  "Chicago": {"conditions": ["Windy", "Partly Cloudy", "Thunderstorms", "Sunny"], "high_f": 62, "low_f": 47},
+  "Miami": {"conditions": ["Sunny", "Scattered Showers", "Humid", "Thunderstorms"], "high_f": 86, "low_f": 74},
+  "Paris": {"conditions": ["Overcast", "Light Rain", "Partly Cloudy", "Sunny"], "high_f": 63, "low_f": 50},
+  "Tokyo": {"conditions": ["Partly Cloudy", "Rain", "Sunny", "Humid"], "high_f": 72, "low_f": 59}
+}
