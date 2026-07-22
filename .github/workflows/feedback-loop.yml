@@ -1,43 +1,130 @@
-# Nightly automated improvement loop: evaluate -> cluster -> curate -> propose -> gate.
-# Runs WITHOUT --run-experiments by default (no API key needed, no model calls).
-# Experiments run only when the ANTHROPIC_API_KEY secret is configured (see the if:).
-# The loop never mutates the committed dataset; it curates a copy and uploads artifacts.
+# Automated improvement loop: collect -> evaluate -> cluster -> curate -> propose -> experiment -> gate.
+#
+# SAFETY BOUNDARY (this is the whole point of the design, do not weaken it):
+# the proposer drafts BOUNDED prompt changes or tool-call changes only, and the
+# loop NEVER applies, merges, commits or deploys them. Stage 7 writes an
+# approval.json with decision "pending_human_review" and promotion stays BLOCKED
+# until a human flips an env-gated candidate (PROMPT_VARIANT / FLIGHT_TOOL_FIX).
+# Nothing in this workflow has write access to the repository.
+#
+# GATES FIRST. The `loop` job declares `needs: gates`, so a compile error, a
+# failing test, a corrupt golden dataset or a broken evaluator stops the run
+# before any model call is made. Previously the loop ran unguarded, which meant a
+# broken evaluator would have produced a clean-looking run and a bogus proposal.
+#
+# COST:
+#   Nightly (schedule) is registry-only and makes ZERO model calls. Failure
+#   clusters are mapped to pre-authored candidates in the proposal registry.
+#   Verified: the only anthropic.Anthropic() in scripts/feedback_loop.py is at
+#   line 638, inside the LLM proposer, and the experiment stage shells out to
+#   scripts/run_experiment.py. Both are flag-gated, so neither runs by default.
+#
+#   Manual dispatch with the two inputs below adds paid calls:
+#     - run_experiments: a control + candidate pair. Measured on the reference run
+#       in docs/loop-runs/interview2-final/comparison.md (lines 22-24):
+#       control $0.1094 + candidate $0.1056 = $0.2150 total for the pair.
+#     - propose_with_llm: one additional call to claude-opus-4-8 at temperature 0,
+#       capped at LLM_PROPOSE_MAX_TOKENS = 2048 output tokens
+#       (scripts/feedback_loop.py lines 116-117). The cost of that single call was
+#       not recorded separately on the reference run, so no figure is claimed here.
+#   Keeping the LLM proposer off the cron is what keeps scheduled spend at zero.
 name: feedback-loop
 
 on:
   schedule:
-    - cron: "0 7 * * *"   # 07:00 UTC nightly
-  workflow_dispatch: {}    # manual trigger
+    - cron: "0 7 * * *"   # 07:00 UTC nightly, registry-only, no model calls
+  workflow_dispatch:
+    inputs:
+      propose_with_llm:
+        description: "Ask the LLM proposer for a bounded draft diff (paid, never applied)"
+        type: boolean
+        default: false
+      run_experiments:
+        description: "Run control + candidate experiments and compare (paid)"
+        type: boolean
+        default: false
+
+# Read-only. The loop must never be able to push a change it proposed.
+permissions:
+  contents: read
+
+concurrency:
+  group: feedback-loop-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
+  # Reuses .github/workflows/ci.yml so the gates are defined exactly once.
+  gates:
+    uses: ./.github/workflows/ci.yml
+
   loop:
+    name: feedback loop
+    needs: gates
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
-      # Empty unless the secret is set; the experiment step keys off this.
+      # Empty unless the secret is configured; the paid steps key off this.
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
         uses: astral-sh/setup-uv@v5
-      # Baseline spans stand in for freshly exported production traces; point --spans
-      # at real traces when this repo ingests them.
-      - name: Run loop (no experiments)
+      - name: Sync dependencies
+        run: uv sync --all-extras --dev
+
+      # Baseline spans stand in for freshly exported production traces; point
+      # --spans at real traces once this repo ingests them.
+      #
+      # Output goes under docs/loop-runs/ to match every other engagement
+      # artifact (it used to be written to loop-runs/ at the repo root, which
+      # matched nothing). The ci- prefix keeps CI output from ever colliding with
+      # a captured, immutable run directory such as docs/loop-runs/interview2-final.
+      # The loop copies the dataset and never mutates evals/golden_dataset.json;
+      # verified locally by sha256 before and after a full run.
+      - name: Run loop (registry-only, no model calls)
         run: >
           uv run python scripts/feedback_loop.py
           --spans docs/baseline/2026-07-19/spans.jsonl
           --dataset evals/golden_dataset.json
-          --out loop-runs/nightly
-      - name: Run loop with experiments (only when API key is configured)
-        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+          --out docs/loop-runs/ci-nightly
+
+      # Manual path only. The booleans are typed inputs used solely in this
+      # condition; they are never interpolated into a shell command.
+      - name: Run loop (LLM proposer, drafts only, never applied)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.propose_with_llm && env.ANTHROPIC_API_KEY != '' }}
         run: >
           uv run python scripts/feedback_loop.py
           --spans docs/baseline/2026-07-19/spans.jsonl
           --dataset evals/golden_dataset.json
-          --out loop-runs/nightly-experiments
+          --out docs/loop-runs/ci-dispatch-llm
+          --propose-with-llm
           --run-experiments
+
+      # Experiments without the LLM proposer, for measuring a registry candidate.
+      - name: Run loop (experiments only)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_experiments && !inputs.propose_with_llm && env.ANTHROPIC_API_KEY != '' }}
+        run: >
+          uv run python scripts/feedback_loop.py
+          --spans docs/baseline/2026-07-19/spans.jsonl
+          --dataset evals/golden_dataset.json
+          --out docs/loop-runs/ci-dispatch-experiments
+          --run-experiments
+
+      # Fails loudly instead of silently skipping when a paid run was requested
+      # but no key is configured, so a dispatch never looks successful without
+      # having done the thing that was asked for.
+      - name: Fail if a paid run was requested without a key
+        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.propose_with_llm || inputs.run_experiments) && env.ANTHROPIC_API_KEY == '' }}
+        run: |
+          echo "A paid run was requested but the ANTHROPIC_API_KEY secret is not configured." >&2
+          exit 1
+
+      # Uploads only CI-generated runs. docs/loop-runs/ also holds captured,
+      # immutable evidence that is already committed and must not be re-bundled.
       - name: Upload loop artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: feedback-loop-run
-          path: loop-runs/
+          path: docs/loop-runs/ci-*
+          if-no-files-found: error

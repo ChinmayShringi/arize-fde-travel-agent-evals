@@ -24,10 +24,12 @@ Seven stages, each echoed to stdout AND appended to <run_dir>/loop_report.md:
               <run_dir>/proposal.md. E2/tool -> candidate B (FLIGHT_TOOL_FIX=1);
               model-attributed failures (E1/E5/E8-style, prompt-noncompliance) ->
               candidate A (PROMPT_VARIANT=v1); E4/tool -> backlog (no candidate).
-5b. PROPOSE (LLM, only with --propose-with-llm) ask claude-haiku-4-5 (temperature
-              0) for a bounded unified diff + 3-sentence rationale, capped to the
-              authorized change types (prompt edit / modify one tool / add one tool),
-              from the clusters + example rows + CURRENT source of the relevant
+5b. PROPOSE (LLM, only with --propose-with-llm) ask the proposer model (default
+              claude-opus-4-8, override with PROPOSER_MODEL; temperature 0 where the
+              model still accepts it) for a bounded unified diff + 3-sentence
+              rationale, capped to the authorized change types (prompt edit /
+              modify one tool / add one tool), from the clusters + example rows
+              + CURRENT source of the relevant
               surface. Appended to proposal.md under a draft marker; NEVER applied.
               API errors / missing key degrade to the registry-only proposal.
 6. EXPERIMENT (only with --run-experiments) run control + each proposed candidate via
@@ -64,6 +66,20 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # agent.* / evals.* resolve against the repo root, not scripts/.
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+
+
+def _repo_relative(p) -> str:
+    """Serialise a path relative to the repo root so run records stay portable.
+
+    approval.json is committed evidence and is read on other machines, so an
+    absolute path captured here leaks the author's home directory and resolves
+    nowhere else. Paths outside the repo are returned unchanged.
+    """
+    resolved = Path(p).resolve()
+    try:
+        return str(resolved.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(resolved)
 # trace_model + dataset live under evals/ and are stdlib-only.
 _EVALS_DIR = REPO_ROOT / "evals"
 if str(_EVALS_DIR) not in sys.path:
@@ -483,9 +499,10 @@ def propose(reporter: Reporter, clusters: dict, dataset_path: Path, run_dir: Pat
 
 
 # --- Stage 5b: PROPOSE (LLM concrete-fix drafter) ---------------------------
-# Opt-in via --propose-with-llm. After clustering, ask claude-haiku-4-5 for a
-# bounded unified diff + 3-sentence rationale, capped to Nick's authorized change
-# types, and append it to proposal.md under a clearly-marked draft section. The
+# Opt-in via --propose-with-llm. After clustering, ask LLM_PROPOSE_MODEL (default
+# claude-opus-4-8, see above) for a bounded unified diff + 3-sentence rationale,
+# capped to Nick's authorized change types, and append it to proposal.md under a
+# clearly-marked draft section. The
 # loop NEVER applies the diff. API errors degrade to the registry-only proposal.
 
 
@@ -811,7 +828,7 @@ def _build_approval_record(run_dir: Path, proposed: list, outcome: dict | None) 
     return {
         "schema": APPROVAL_SCHEMA,
         "run_id": run_dir.name,
-        "run_dir": str(run_dir.resolve()),
+        "run_dir": _repo_relative(run_dir),
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "git_sha": _git_sha(),
         "git_dirty": _git_dirty(REPO_ROOT),
@@ -876,7 +893,8 @@ def _parse_args(argv: list) -> argparse.Namespace:
         "--propose-with-llm",
         action="store_true",
         help=(
-            "After clustering, ask claude-haiku-4-5 (temperature 0) for a bounded "
+            "After clustering, ask the proposer model (default claude-opus-4-8, "
+            "override with PROPOSER_MODEL) for a bounded "
             "unified diff + rationale, capped to authorized change types, and append it "
             "to proposal.md under a draft marker. The loop NEVER applies the diff. "
             "Without this flag, behavior is byte-identical to the registry-only loop."

@@ -38,6 +38,53 @@ _ATTACH_WINDOW = 120
 
 _NUMBER_RE = re.compile(r"\d[\d,]*")
 
+# A markdown ATX heading line: up to 3 leading spaces, 1-6 '#', then the text.
+# Group 2 is the heading text, blanked in place when the heading is a section
+# label so that character offsets into the reply stay valid.
+_HEADING_RE = re.compile(r"(?m)^([ \t]{0,3}#{1,6}[ \t]+)(.*)$")
+
+# Generic document-structure nouns. A heading built from one of these is naming
+# a section of the reply, not an option the model claims exists ("## Hotel
+# Options"). No hotel in the fixture set, and no plausible invented hotel name,
+# is built from these words (eval v1.3, docs/EVAL_ADJUDICATION.md finding 4).
+_SECTION_LABEL_WORDS = frozenset(
+    {
+        "option", "options", "recommendation", "recommendations",
+        "choice", "choices", "pick", "picks", "suggestion", "suggestions",
+        "selection", "selections", "alternative", "alternatives",
+        "result", "results", "availability", "comparison", "breakdown",
+        "summary", "overview", "details", "info", "information",
+        "list", "notes", "section",
+    }
+)
+_LABEL_TOKEN_RE = re.compile(r"[A-Za-zÀ-ÿ']+")
+
+
+def _is_section_label(heading_text: str) -> bool:
+    """True when a markdown heading is a structural label rather than a name.
+
+    Keyed on the heading being a heading (structure) AND on a generic
+    structure noun appearing in it. An invented hotel named in a heading, e.g.
+    '## Hotel Bellevue', contains no such noun and is still extracted."""
+    words = {w.lower() for w in _LABEL_TOKEN_RE.findall(heading_text)}
+    return bool(words & _SECTION_LABEL_WORDS)
+
+
+def _mask_section_headings(reply: str) -> str:
+    """Blank the text of section-label headings, preserving length so every
+    character offset computed on the result also indexes the original reply."""
+
+    def _blank(m):
+        text = m.group(2)
+        return m.group(1) + (" " * len(text) if _is_section_label(text) else text)
+
+    return _HEADING_RE.sub(_blank, reply or "")
+
+
+def _hotel_mentions(reply: str, ctx) -> dict:
+    """extract_hotel_mentions with section-label headings removed first."""
+    return extract_hotel_mentions(_mask_section_headings(reply), ctx)
+
 
 # --------------------------------------------------------------------------- #
 # Shared grounding helpers
@@ -103,7 +150,7 @@ def _named_option_spans(reply: str, ctx) -> list:
     flight number) in the reply, used to test price attachment."""
     spans = []
     low = reply.lower()
-    mentions = extract_hotel_mentions(reply, ctx)
+    mentions = _hotel_mentions(reply, ctx)
     for name in list(mentions["fixture"]) + list(mentions["invented"]):
         needle = name.lower()
         idx = low.find(needle)
@@ -155,7 +202,7 @@ def e1_fabricated_entity(trace, ctx):
 
     fabricated = []
 
-    mentions = extract_hotel_mentions(reply, ctx)
+    mentions = _hotel_mentions(reply, ctx)
     for name in mentions["fixture"]:
         if fold(name) not in grounding_l:
             fabricated.append({"entity": name, "type": "hotel", "kind": "leak"})
@@ -296,7 +343,7 @@ def e5_empty_result_honesty(trace, ctx):
     grounding = _grounding_text(trace)
 
     asserted = []
-    mentions = extract_hotel_mentions(reply, ctx)
+    mentions = _hotel_mentions(reply, ctx)
     for name in mentions["fixture"]:
         asserted.append({"entity": name, "type": "hotel"})
     for name in mentions["invented"]:

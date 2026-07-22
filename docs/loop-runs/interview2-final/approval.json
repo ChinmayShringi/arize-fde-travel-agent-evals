@@ -1,0 +1,87 @@
+{
+  "schema": "approval/v1",
+  "run_id": "interview2-final",
+  "run_dir": "docs/loop-runs/interview2-final",
+  "timestamp": "2026-07-22T00:45:20.248658+00:00",
+  "git_sha": "061307e",
+  "git_dirty": true,
+  "candidate_ids": [
+    {
+      "id": "B",
+      "name": "candidate-B-flight-tool-fix",
+      "defect": "D-02 (flight direction lost + route hidden)",
+      "enable_flag": "FLIGHT_TOOL_FIX=1",
+      "env_flags": {
+        "PROMPT_VARIANT": "v0",
+        "FLIGHT_TOOL_FIX": "1"
+      }
+    }
+  ],
+  "quality_delta": {
+    "candidate-B-flight-tool-fix": {
+      "E1": {
+        "control_pass_rate": 96.96969696969697,
+        "candidate_pass_rate": 100.0,
+        "delta_pp": 3.03,
+        "control_applicable": 33,
+        "candidate_applicable": 33
+      },
+      "E10": {
+        "control_pass_rate": 100.0,
+        "candidate_pass_rate": 100.0,
+        "delta_pp": 0.0,
+        "control_applicable": 2,
+        "candidate_applicable": 2
+      },
+      "E2": {
+        "control_pass_rate": 11.11111111111111,
+        "candidate_pass_rate": 100.0,
+        "delta_pp": 88.89,
+        "control_applicable": 9,
+        "candidate_applicable": 8
+      },
+      "E3": {
+        "control_pass_rate": 100.0,
+        "candidate_pass_rate": 100.0,
+        "delta_pp": 0.0,
+        "control_applicable": 24,
+        "candidate_applicable": 24
+      },
+      "E4": {
+        "control_pass_rate": 0.0,
+        "candidate_pass_rate": 0.0,
+        "delta_pp": 0.0,
+        "control_applicable": 3,
+        "candidate_applicable": 3
+      },
+      "E5": {
+        "control_pass_rate": 100.0,
+        "candidate_pass_rate": 100.0,
+        "delta_pp": 0.0,
+        "control_applicable": 4,
+        "candidate_applicable": 5
+      },
+      "E6": {
+        "control_pass_rate": 96.96969696969697,
+        "candidate_pass_rate": 96.96969696969697,
+        "delta_pp": 0.0,
+        "control_applicable": 33,
+        "candidate_applicable": 33
+      },
+      "E7": {
+        "control_pass_rate": 100.0,
+        "candidate_pass_rate": 100.0,
+        "delta_pp": 0.0,
+        "control_applicable": 33,
+        "candidate_applicable": 33
+      }
+    }
+  },
+  "regressions": [],
+  "decision": "pending_human_review",
+  "reviewer": null,
+  "decision_time": null,
+  "promotion_target": "agent production defaults (PROMPT_VARIANT / FLIGHT_TOOL_FIX)",
+  "comparison_report": "docs/loop-runs/interview2-final/comparison.md",
+  "note": "Written by scripts/feedback_loop.py. The loop can only write decision 'pending_human_review' with a null reviewer. A human records the real decision by editing this file; promotion is not automated."
+}

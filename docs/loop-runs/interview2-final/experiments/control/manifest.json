@@ -1,0 +1,14 @@
+{
+  "name": "control",
+  "prompt_variant": "v0",
+  "flight_tool_fix": "0",
+  "model": "claude-haiku-4-5",
+  "redact_pii": "0",
+  "pii_redacted_turns": 0,
+  "dataset_version": "v1-2026-07-19",
+  "dataset_path": "evals/golden_dataset.json",
+  "git_sha": "061307e",
+  "timestamp": "2026-07-22T00:43:40.688743+00:00",
+  "turn_count": 33,
+  "wall_seconds": 101.4
+}

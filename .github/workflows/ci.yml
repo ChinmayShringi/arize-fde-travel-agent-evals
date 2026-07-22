@@ -1,0 +1,99 @@
+# Quality gates. Everything here is deterministic, offline, and makes ZERO model
+# calls, so it needs no secrets and costs nothing to run on every push and PR.
+#
+# This workflow is also called by feedback-loop.yml via `workflow_call`, so the
+# gates are defined exactly once and the nightly loop cannot run unless they pass.
+# Before this existed the loop ran with no compile check, no tests and no dataset
+# validation, so a broken evaluator would have produced a clean-looking run.
+#
+# Every command below was executed locally against this commit before being
+# committed here. None of them is aspirational.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+  # Lets feedback-loop.yml depend on these gates instead of duplicating them.
+  workflow_call: {}
+
+jobs:
+  gates:
+    name: quality gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1. Dependencies.
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Sync dependencies
+        run: uv sync --all-extras --dev
+
+      # 2. Static compile check. Catches syntax errors in any module the loop
+      #    imports, including eval modules that the test suite may not import.
+      - name: Compile check
+        run: uv run python -m compileall -q agent evals scripts tests
+
+      # 3. Lint, restricted to pyflakes (F) rules: undefined names and unused
+      #    imports, i.e. the defects that break an evaluator at runtime.
+      #    Deliberately NOT the full default rule set: this repo currently has 3
+      #    pre-existing E402 violations (agent/session_store import placement and
+      #    agent/prompt.py imports after the module docstring), so a full
+      #    `ruff check` exits 1 today and would make this workflow red on its very
+      #    first run. Widen the selection once those are fixed.
+      #    uvx, not `uv run ruff`: ruff is not a declared project dependency, so
+      #    `uv run ruff` resolves to nothing on a clean checkout.
+      - name: Lint (pyflakes subset)
+        run: uvx ruff@0.15.0 check --select F --no-cache agent evals scripts tests
+
+      # 4. Unit tests.
+      - name: Unit tests
+        run: uv run pytest -q
+
+      # 5. Golden dataset schema validation.
+      #    NOTE: do not "simplify" this into `uv run python -m evals.dataset --validate`.
+      #    evals/dataset.py has no __main__ guard and no argument parser, so that
+      #    command imports the module, ignores the flag, and exits 0 on a corrupt
+      #    file. It was verified to exit 0 against a deliberately malformed dataset.
+      #    It is a gate that can never fail, which is worse than no gate.
+      #    load_dataset() is the real entry point and raises ValueError on a bad file.
+      - name: Validate golden dataset schema
+        run: |
+          uv run python - <<'PY'
+          from evals.dataset import load_dataset
+
+          path = "evals/golden_dataset.json"
+          data = load_dataset(path)
+          n = len(data["conversations"])
+          if n == 0:
+              raise SystemExit(f"{path}: dataset has zero conversations")
+          print(f"dataset OK: {path} version={data['version']} conversations={n}")
+          PY
+
+      # 6. Offline evaluator smoke test against the COMMITTED fixture
+      #    (tests/fixtures/spans.jsonl, tracked in git, 18 span lines).
+      #    What this proves: the evaluator suite loads its modules and its fixture
+      #    context and produces rows. What it does NOT prove: that the agent passes.
+      #    run_evals.py treats eval failures as data and exits 0 when it ran to
+      #    completion; it exits 2 only on an import or IO fault. The fixture does
+      #    contain one deliberate E2 flight_direction failure, so asserting "all
+      #    green" here would be wrong. The assertion below is therefore about
+      #    evaluator health: rows were produced, across more than one eval.
+      - name: Evaluator smoke test (committed fixture)
+        run: |
+          uv run python evals/run_evals.py tests/fixtures/spans.jsonl "$RUNNER_TEMP/eval-smoke"
+          uv run python - "$RUNNER_TEMP/eval-smoke/results.jsonl" <<'PY'
+          import json
+          import sys
+
+          rows = [json.loads(line) for line in open(sys.argv[1]) if line.strip()]
+          if not rows:
+              raise SystemExit("evaluator smoke test produced zero result rows")
+          eval_ids = sorted({r["eval_id"] for r in rows})
+          if len(eval_ids) < 2:
+              raise SystemExit(f"evaluator smoke test exercised only {eval_ids}; suite looks broken")
+          print(f"evaluator OK: {len(rows)} rows across evals {','.join(eval_ids)}")
+          PY

@@ -57,6 +57,21 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+
+def repo_relative(p) -> str:
+    """Serialise a path relative to the repo root so manifests stay portable.
+
+    Manifests are committed evidence and are read on other machines and in CI,
+    so an absolute path baked in at capture time leaks the author's home
+    directory and does not resolve anywhere else. Paths outside the repo are
+    returned unchanged, since there is no meaningful relative form for them.
+    """
+    resolved = Path(p).resolve()
+    try:
+        return str(resolved.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(resolved)
+
 PROMPT_VARIANTS = ("v0", "v1", "v2")
 FLIGHT_TOOL_FIXES = ("0", "1")
 REDACT_PII_CHOICES = ("0", "1")
@@ -217,7 +232,7 @@ def _write_manifest(
         "redact_pii": getattr(args, "redact_pii", "0"),
         "pii_redacted_turns": redacted_turns,
         "dataset_version": dataset.get("version", "unknown"),
-        "dataset_path": str(Path(args.dataset).resolve()),
+        "dataset_path": repo_relative(args.dataset),
         "git_sha": _git_sha(),
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "turn_count": turn_count,
