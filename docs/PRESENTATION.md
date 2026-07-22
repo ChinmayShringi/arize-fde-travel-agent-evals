@@ -37,7 +37,7 @@ slide says so in the same sentence.
 Repo: `github.com/ChinmayShringi/arize-fde-travel-agent-evals` (private), commit
 `061307e`, tag `interview2-demo-v1`. Upstream `Arize-ai/sample-travel-agent` is
 attached as the `upstream` remote, so the diff against what you shipped is one
-command. 206 tests pass (`uv run pytest -q`).
+command. 208 tests pass (`uv run pytest -q`).
 
 ---
 
