@@ -43,7 +43,7 @@ One qualification on automation, stated so no one overreads it: GitHub Actions C
 executed successfully. The scheduled feedback workflow is configured, while every loop
 run captured in this repository was invoked locally.
 
-Test suite: **214 tests collected** (`uv run pytest --collect-only -q`), `pytest` declared
+Test suite: **215 tests collected** (`uv run pytest --collect-only -q`), `pytest` declared
 as a dev dependency in `pyproject.toml`.
 
 The completed historical run at `docs/loop-runs/interview2-final/` carries all seven

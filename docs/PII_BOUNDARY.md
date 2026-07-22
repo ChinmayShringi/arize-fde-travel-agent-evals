@@ -270,7 +270,7 @@ The `False` case is byte-identical to the pre-change runner: same text to
 from section 2. Note that `replies.jsonl` records the cleaned text when redaction
 is on, so the raw value is not persisted there either.
 
-Full suite after the change: `uv run pytest -q` -> `214 passed`.
+Full suite after the change: `uv run pytest -q` -> `215 passed`.
 `uv run ruff check scripts/run_experiment.py` -> clean.
 
 ---

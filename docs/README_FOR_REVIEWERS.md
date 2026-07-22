@@ -72,10 +72,7 @@ uv run pytest -q
 Real output:
 
 ```
-........................................................................ [ 37%]
-........................................................................ [ 75%]
-...............................................                          [100%]
-214 passed
+215 passed
 ```
 
 **Command 2: re-score the frozen baseline from its captured spans.**
@@ -263,7 +260,7 @@ Read this section before repeating any claim from this repo out loud.
 | PII redaction at source | `agent/redaction.py`, called in `agent/api.py` and `agent/chat.py` | 26 tests in `tests/test_redaction.py`. **See the honest limit below** |
 | Nightly scheduled loop | `.github/workflows/feedback-loop.yml` (`cron: "0 7 * * *"`) | Registry-only on cron; no model calls, so scheduled spend is zero |
 
-214 tests pass (`uv run pytest -q`, section 3a).
+215 tests pass (`uv run pytest -q`, section 3a).
 
 ### Proposed only (a written specification with no running system behind it)
 
@@ -277,15 +274,16 @@ Read this section before repeating any claim from this repo out loud.
   implemented in `scripts/approval.py`; the specific pass-rate floor is written
   prose, not code. See `docs/REQUIREMENT_MAP.md` row 4.
 
-### Implemented but never demonstrated on a captured run
+### Historical evidence limitation
 
-- **PII redaction has never fired in a captured span.** `pii.redacted` appears in
+- **PII redaction had not fired in the captured experiment spans.** `pii.redacted` appears in
   **zero** of the `spans.jsonl` files in this repo. Verify:
   `find docs -name spans.jsonl -exec command grep -c "pii\.redacted" {} +` returns
   `0` for every file. The reason is structural, not a bug: redaction is applied in
-  the two serving entry points, and `scripts/run_experiment.py` calls `run_agent()`
-  in process, bypassing both. The redactor is implemented and unit-tested; it is
-  the *capture path* that has never exercised it. `docs/PII_BOUNDARY.md` documents
+  the two serving entry points, while the historical experiment runner called
+  `run_agent()` in process without redaction. Current experiment replay redacts
+  independently by default, but a fresh paid run has not captured that behavior.
+  `docs/PII_BOUNDARY.md` documents
   this and one further trap: `pii.redacted` is carried inside the OpenInference
   `metadata` attribute, so a monitor filtering on a top-level `pii.redacted`
   attribute would never fire.
@@ -316,11 +314,11 @@ One line per directory.
 
 | Path | What is in it |
 |---|---|
-| `agent/` | The shipped travel agent, plus additive tracing, redaction, and session-store modules. Shipped prompt preserved byte-for-byte; changes are env-flag gated and off by default |
+| `agent/` | The shipped travel agent, plus additive tracing, redaction, and session-store modules. Prompt and flight-tool behavior candidates are env-flag gated and off by default |
 | `data/` | Static JSON fixtures the tools read: flights, hotels, weather. A closed set, which is why groundedness is exact set membership rather than an LLM opinion |
 | `evals/` | The eval portfolio (8 deterministic, 3 judges), the golden dataset, the trace model the evals read, and judge calibration material |
 | `scripts/` | Baseline capture, experiment runner, comparison, the seven-stage feedback loop, the approval record, and the Arize push utilities |
-| `tests/` | 191 unit tests over the agent, evaluators, dataset curation, redaction, and the approval contract |
+| `tests/` | 215 unit tests over the agent, evaluators, dataset curation, redaction, workflows, and the approval contract |
 | `docs/` | All engagement output, and all captured evidence. Treated as immutable once written. See `docs/EVIDENCE_INDEX.md` |
 | `docs/baseline/` | The Day 0 capture of the agent exactly as shipped, taken before anything was touched |
 | `docs/experiments/` | Per-variant experiment runs: spans, replies, manifest, evals |

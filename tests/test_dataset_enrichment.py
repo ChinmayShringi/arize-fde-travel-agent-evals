@@ -520,3 +520,37 @@ def test_llm_proposal_prompt_redacts_pii_from_result_examples():
 
     assert card not in prompt
     assert "[REDACTED-CARD]" in prompt
+
+
+def test_eval_artifacts_redact_nested_legacy_trace_pii(tmp_path):
+    from run_evals import _render_summary_md, _sanitize_result, _summarize, _write_results
+
+    card = "4111 1111 1111 1111"
+    raw = {
+        "trace_id": "t1",
+        "user_input": f"Book with {card}",
+        "trace_context": {
+            "messages": [f"Book with {card}"],
+            "assistant_reply": f"Received {card}",
+            "tool_calls": [{"arguments": {"card": card}}],
+            "tool_outputs": [{"output": {"card": card}}],
+            "pii_redacted": False,
+            "pii_types": [],
+        },
+        "eval_id": "E6",
+        "name": "pii_leakage",
+        "passed": False,
+        "reason": f"found {card}",
+        "attribution": "system",
+        "evidence": {"match": card},
+    }
+
+    safe = _sanitize_result(raw)
+    _write_results([safe], tmp_path)
+    summary = _render_summary_md(_summarize([safe]), [safe])
+    written = (tmp_path / "results.jsonl").read_text() + summary
+
+    assert card not in written
+    assert "[REDACTED-CARD]" in written
+    assert safe["trace_context"]["pii_redacted"] is True
+    assert safe["trace_context"]["pii_types"] == ["card"]

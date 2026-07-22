@@ -133,11 +133,11 @@ tracing on, off, or misconfigured (`agent/tracing.py` module docstring).
 - **OpenInference / OTel semconv on every span**, which is what keeps the design
   portable (see section 9). The dual-sink tracer gives a hot path (AX) and a cold path
   (durable JSONL/object store) so no trace depends on a single platform's retention.
-- **Redaction at source, before export (Luke's PII boundary).** PII is redacted inside
-  the app process before any span leaves it, so it never reaches the LLM provider or the
-  eval system. E6 pii scored 23/23 on the baseline. In production this is a redaction
-  span processor that runs before both the OTLP and archive exporters, so redaction is
-  structurally upstream of every sink, not a per-sink afterthought.
+- **Redaction at source, before export (partial implementation of Luke's boundary).**
+  Formatted US SSNs and Luhn-valid cards are redacted inside the app process before model
+  execution, tracing, experiment replay, or new eval artifacts. E6 scored 23/23 on the
+  baseline. Names, email, phone, addresses, passports, non-US identifiers, and obfuscated
+  values remain an explicit production gap; see `docs/PII_BOUNDARY.md`.
 - **Retention tiers.** Hot: recent traces in AX for monitors, dashboards, and eval
   labels. Cold: the append-only JSONL archive (owner-only `0600`, since spans carry full
   conversation content) promoted to object storage with lifecycle rules. This is exactly

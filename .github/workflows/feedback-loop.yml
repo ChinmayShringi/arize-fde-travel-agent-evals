@@ -36,7 +36,7 @@ on:
   workflow_dispatch:
     inputs:
       propose_with_llm:
-        description: "Ask the LLM proposer for a bounded draft diff (paid, never applied)"
+        description: "Draft a bounded diff and run paired experiments (paid, never applied)"
         type: boolean
         default: false
       run_experiments:
@@ -98,7 +98,7 @@ jobs:
 
       # Manual path only. The booleans are typed inputs used solely in this
       # condition; they are never interpolated into a shell command.
-      - name: Run loop (LLM proposer, drafts only, never applied)
+      - name: Run loop (LLM proposal plus experiments, never applied)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.propose_with_llm && steps.anthropic.outputs.available == 'true' }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

@@ -21,7 +21,7 @@ tool. Candidate B fixes only that tool path.
 | Public codebase | Complete | <https://github.com/ChinmayShringi/arize-fde-travel-agent-evals> |
 | Customer presentation | Complete | `docs/Interview_2_Customer_Presentation.pptx` |
 | Automated feedback loop | Implemented and executed | `scripts/feedback_loop.py`; `docs/loop-runs/interview2-final/` |
-| Test suite | Passing | 214 tests, plus slide overflow validation |
+| Test suite | Passing | 215 tests, plus slide overflow validation |
 | CI | Passing | GitHub Actions on the reviewed branch |
 | Promotion gate | Intentionally pending | `approval.json` permits only `pending_human_review` |
 
@@ -70,6 +70,8 @@ Counts accompany percentages because E2 applicability differs between arms.
     to immutable commit SHAs.
 11. GitHub secret scanning, push protection, and Dependabot security updates are enabled on
     the public repository.
+12. Deterministic evaluation results and summaries now recursively redact supported PII
+    patterns before writing any new artifact.
 
 ## What exceeds the interview minimum
 

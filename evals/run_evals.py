@@ -23,13 +23,54 @@ import json
 import sys
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 # Sibling modules (trace_model, context, e_*) resolve because the script's own
 # directory is on sys.path when run as `python evals/run_evals.py`.
 from context import EvalContext
+from agent.redaction import redact
 from trace_model import load_traces
 
 # Eval modules are imported inside main() so a broken module is reported by name.
 _EVAL_MODULES = ("e_grounding", "e_toolcalls", "e_guardrails", "e_conflict")
+
+
+def _redact_value(value):
+    """Recursively redact JSON-like output before it reaches an eval artifact."""
+    if isinstance(value, str):
+        clean, findings = redact(value)
+        return clean, findings
+    if isinstance(value, list):
+        cleaned = [_redact_value(item) for item in value]
+        return [item for item, _ in cleaned], [kind for _, kinds in cleaned for kind in kinds]
+    if isinstance(value, dict):
+        cleaned = {key: _redact_value(item) for key, item in value.items()}
+        return (
+            {key: item for key, (item, _) in cleaned.items()},
+            [kind for _, kinds in cleaned.values() for kind in kinds],
+        )
+    return value, []
+
+
+def _sanitize_result(result: dict) -> dict:
+    """Return an artifact-safe result without mutating the evaluator output."""
+    safe, findings = _redact_value(result)
+    if not findings:
+        return safe
+    trace_context = safe.get("trace_context")
+    if not isinstance(trace_context, dict):
+        return safe
+    pii_types = list(dict.fromkeys([*trace_context.get("pii_types", []), *findings]))
+    return {
+        **safe,
+        "trace_context": {
+            **trace_context,
+            "pii_redacted": True,
+            "pii_types": pii_types,
+        },
+    }
 
 
 def _load_evals() -> list:
@@ -99,7 +140,7 @@ def _run_all(traces, ctx, evals) -> list:
                 "trace_context": context,
                 **result,
             }
-            results.append(enriched)
+            results.append(_sanitize_result(enriched))
     return results
 
 
