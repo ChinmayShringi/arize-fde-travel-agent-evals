@@ -59,31 +59,74 @@ _SECTION_LABEL_WORDS = frozenset(
 )
 _LABEL_TOKEN_RE = re.compile(r"[A-Za-zÀ-ÿ']+")
 
+# Domain nouns and connectors that carry no entity identity on their own. A
+# heading built only from these plus a structure noun names a section; a heading
+# containing anything else may be naming an entity and must stay visible.
+_GENERIC_CONTEXT_WORDS = frozenset(
+    {
+        # Accommodation and travel type nouns. These appear inside real fixture
+        # names ("The Bowery Inn"), so they are generic only in combination with
+        # a structure noun and nothing else.
+        "hotel", "hotels", "inn", "inns", "resort", "resorts", "lodge",
+        "lodges", "motel", "motels", "hostel", "hostels", "suite", "suites",
+        "guesthouse", "flight", "flights", "weather", "itinerary",
+        "itineraries", "trip", "trips", "day", "days", "night", "nights",
+        "stay", "accommodation", "accommodations", "lodging", "travel",
+        "booking", "bookings", "price", "prices", "cost", "costs", "budget",
+        "and", "or", "the", "a", "an", "for", "of", "your", "you", "to",
+        "with", "in", "on", "at", "by", "some", "other", "more", "all",
+    }
+)
 
-def _is_section_label(heading_text: str) -> bool:
+
+def _known_place_words(ctx) -> frozenset:
+    """Lowercased tokens of every city named in the fixture set.
+
+    A city in a heading is context ("## Hotel Options for Paris"), not an
+    invented entity, so it must not by itself keep a generic heading visible.
+    Derived from ctx rather than hard-coded so it tracks the fixtures.
+    """
+    words = set()
+    for attr in ("hotel_cities", "flight_cities", "weather_cities"):
+        for city in getattr(ctx, attr, ()) or ():
+            words.update(w.lower() for w in _LABEL_TOKEN_RE.findall(str(city)))
+    return frozenset(words)
+
+
+def _is_section_label(heading_text: str, place_words=frozenset()) -> bool:
     """True when a markdown heading is a structural label rather than a name.
 
-    Keyed on the heading being a heading (structure) AND on a generic
-    structure noun appearing in it. An invented hotel named in a heading, e.g.
-    '## Hotel Bellevue', contains no such noun and is still extracted."""
+    Two conditions, both required. The heading must contain a generic STRUCTURE
+    noun ("options", "comparison"), and every remaining word must be generic or a
+    known place. Requiring the WHOLE heading to be generic is what stops this
+    from becoming a hole in the primary eval: masking on the mere PRESENCE of a
+    structure noun would blank "## Hotel Options: Hotel Van Zandt" entirely and
+    let a real invention through (eval v1.3.1).
+
+    "## Hotel Bellevue" has no structure noun, so it is never masked and an
+    invented hotel named in a heading is still caught.
+    """
     words = {w.lower() for w in _LABEL_TOKEN_RE.findall(heading_text)}
-    return bool(words & _SECTION_LABEL_WORDS)
+    if not words & _SECTION_LABEL_WORDS:
+        return False
+    return words <= (_SECTION_LABEL_WORDS | _GENERIC_CONTEXT_WORDS | place_words)
 
 
-def _mask_section_headings(reply: str) -> str:
+def _mask_section_headings(reply: str, place_words=frozenset()) -> str:
     """Blank the text of section-label headings, preserving length so every
     character offset computed on the result also indexes the original reply."""
 
     def _blank(m):
         text = m.group(2)
-        return m.group(1) + (" " * len(text) if _is_section_label(text) else text)
+        masked = _is_section_label(text, place_words)
+        return m.group(1) + (" " * len(text) if masked else text)
 
     return _HEADING_RE.sub(_blank, reply or "")
 
 
 def _hotel_mentions(reply: str, ctx) -> dict:
     """extract_hotel_mentions with section-label headings removed first."""
-    return extract_hotel_mentions(_mask_section_headings(reply), ctx)
+    return extract_hotel_mentions(_mask_section_headings(reply, _known_place_words(ctx)), ctx)
 
 
 # --------------------------------------------------------------------------- #

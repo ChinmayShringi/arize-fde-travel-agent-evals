@@ -25,18 +25,18 @@ any agent.* module (agent modules read env at import time):
     FLIGHT_TOOL_FIX  "0"  (default, shipped) | "1"
 With both at their defaults the agent behaves byte-identically to today.
 
-PII redaction on the replay path (--redact-pii / EXPERIMENT_REDACT_PII, DEFAULT 0):
-    0 (default) the replay feeds dataset text to run_agent verbatim, exactly as
-      every already-captured run under docs/experiments/ did. Comparability with
-      the immutable control run is preserved.
-    1 the replay applies agent/redaction.py redact() and the OpenInference
+PII redaction on the replay path (--redact-pii / EXPERIMENT_REDACT_PII, DEFAULT 1):
+    1 (default) the replay applies agent/redaction.py redact() and the OpenInference
       pii metadata context first, matching the serving path in agent/api.py and
       agent/chat.py.
-Default is 0 on purpose. The golden dataset contains a Luhn-valid card in
-synth-06, so turning redaction on changes the model input on that case and flips
-E6 from 32/33 to 33/33. A run with --redact-pii 1 is NOT eval-comparable to the
-captured control-v0 run; use it as a standalone demonstration of the boundary,
-never as an arm of the before/after comparison. See docs/PII_BOUNDARY.md.
+    0 is an explicit legacy opt-out for reproducing already-captured runs that
+      fed dataset text to run_agent verbatim. The golden dataset contains a
+      Luhn-valid card in synth-06, so this mode crosses the stated PII boundary
+      and must never be used for new evidence or production-like experiments.
+
+The default is fail-safe even though it changes the model input for the planted
+PII probe and makes new runs incomparable to historical unredacted captures. See
+docs/PII_BOUNDARY.md.
 
 The runner refuses to overwrite an out dir that already holds a spans.jsonl.
 A per-turn API error is recorded as data ({"error": ...}) and the replay
@@ -108,12 +108,12 @@ def _parse_args(argv: list) -> argparse.Namespace:
     parser.add_argument(
         "--redact-pii",
         choices=REDACT_PII_CHOICES,
-        default=os.environ.get("EXPERIMENT_REDACT_PII", "0"),
+        default=os.environ.get("EXPERIMENT_REDACT_PII", "1"),
         help=(
             "1 = apply the serving-path PII redaction before each turn. "
-            "0 (default, also the EXPERIMENT_REDACT_PII default) = verbatim replay, "
-            "byte-identical to every captured run. A --redact-pii 1 run is not "
-            "eval-comparable to the captured control; see docs/PII_BOUNDARY.md."
+            "1 is the safe default. 0 is an explicit legacy opt-out for reproducing "
+            "historical unredacted captures and must not be used for new evidence; "
+            "see docs/PII_BOUNDARY.md."
         ),
     )
     return parser.parse_args(argv)
@@ -158,7 +158,7 @@ def _redact_turn(user_message: str, redact_pii: bool) -> tuple:
     return clean, sorted(set(findings))
 
 
-def _replay(dataset: dict, name: str, spans_path: Path, redact_pii: bool = False):
+def _replay(dataset: dict, name: str, spans_path: Path, redact_pii: bool = True):
     """Replay every conversation in-process. Returns (replies, turn_count, redacted_turns).
 
     Env must already be set: this function imports agent.loop, so setup_tracing()
@@ -227,9 +227,9 @@ def _write_manifest(
         "prompt_variant": args.prompt_variant,
         "flight_tool_fix": args.flight_tool_fix,
         "model": model,
-        # Additive fields. redact_pii "0" is the default and reproduces every
-        # already-captured run; "1" means the run is not eval-comparable to them.
-        "redact_pii": getattr(args, "redact_pii", "0"),
+        # Historical captures used "0". New runs default to "1" so experiments
+        # enforce the same source boundary as serving.
+        "redact_pii": getattr(args, "redact_pii", "1"),
         "pii_redacted_turns": redacted_turns,
         "dataset_version": dataset.get("version", "unknown"),
         "dataset_path": repo_relative(args.dataset),

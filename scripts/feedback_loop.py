@@ -33,7 +33,7 @@ Seven stages, each echoed to stdout AND appended to <run_dir>/loop_report.md:
               surface. Appended to proposal.md under a draft marker; NEVER applied.
               API errors / missing key degrade to the registry-only proposal.
 6. EXPERIMENT (only with --run-experiments) run control + each proposed candidate via
-              scripts/run_experiment.py on the CURRENT dataset, then compare into
+              scripts/run_experiment.py on the CURATED dataset copy, then compare into
               <run_dir>/comparison.md.
 7. GATE       append a promotion-decision block AND write <run_dir>/approval.json,
               the machine-readable record (run id, UTC timestamp, git sha + dirty
@@ -925,15 +925,15 @@ def main(argv: list) -> int:
     results_path = evaluate(reporter, spans_path, run_dir)
     results = _load_results(results_path)
     clusters = cluster(reporter, results)
-    curate(reporter, results, dataset_path, run_dir)
-    proposed, proposal_path = propose(reporter, clusters, dataset_path, run_dir)
+    curated_dataset_path = curate(reporter, results, dataset_path, run_dir)
+    proposed, proposal_path = propose(reporter, clusters, curated_dataset_path, run_dir)
 
     if args.propose_with_llm:
         propose_with_llm(reporter, clusters, results, proposal_path)
 
     outcome = None
     if args.run_experiments:
-        outcome = experiment(reporter, proposed, dataset_path, run_dir)
+        outcome = experiment(reporter, proposed, curated_dataset_path, run_dir)
     else:
         reporter.section("6. EXPERIMENT")
         reporter.log("skipped (--run-experiments not set).")

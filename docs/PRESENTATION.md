@@ -37,7 +37,7 @@ slide says so in the same sentence.
 Repo: `github.com/ChinmayShringi/arize-fde-travel-agent-evals` (private), commit
 `061307e`, tag `interview2-demo-v1`. Upstream `Arize-ai/sample-travel-agent` is
 attached as the `upstream` remote, so the diff against what you shipped is one
-command. 191 tests pass (`uv run pytest -q`).
+command. 206 tests pass (`uv run pytest -q`).
 
 ---
 
@@ -52,7 +52,8 @@ command. 191 tests pass (`uv run pytest -q`).
 - **Luke:** answers grounded in tool calls; no hallucinating around API failures;
   PII never sent to the model provider; the homegrown orchestration stays.
 
-Slide 20 walks all 18 requirements against delivered evidence, one row each, with
+Slide 20 walks all 21 Interview 1 requirements against delivered evidence, one row
+each, plus 5 capabilities delivered beyond them, with
 the honest status word on every row. [docs/REQUIREMENT_MAP.md]
 
 ## 2. Scope of this prototype, stated before anything else
@@ -396,6 +397,14 @@ Same golden dataset, six cells, one run per cell.
 | Sonnet 5 | fixed | 100% | **100%** | 100% | $0.409 | 4.4s |
 | Opus 4.8 | fixed | 100% | **100%** | 100% | $1.922 | 5.1s |
 
+> Evaluator-version caveat: the E1 figures in this table were scored under evaluator
+> v1.2. The `model-opus-4-8` run carries the same section-heading false positive that
+> was adjudicated as finding 4 (`docs/EVAL_ADJUDICATION.md`); re-scored under v1.3.1 its
+> E1 is 30/33 (91%), not 29/33 (88%). The captured artifact is left unedited as evidence.
+> The direction of the finding is unchanged: frontier models on the shipped prompt still
+> fabricate where Haiku does not, because they obey the prompt Haiku ignores.
+
+
 On your **shipped** prompt, the frontier models are **worse**, at 5.6x and 25x the
 cost. They invented real Denver and Austin hotels with concrete prices (Brown Palace,
 Crawford Hotel, Kimpton Hotel Born, Hotel Van Zandt, Hotel Gracery Shinjuku) after
@@ -560,7 +569,8 @@ they are slides 2 and 18 rather than a footnote.
 
 ## 20. Does this satisfy what you asked for in Interview 1?
 
-Eighteen requirements, one row each, with a status word we do not soften:
+Twenty-one Interview 1 requirements, one row each, plus 5 delivered beyond them,
+with a status word we do not soften:
 `IMPLEMENTED` means code exists and a captured artifact scores it;
 `IMPLEMENTED (not fired)` means the code exists and is unit-tested but no captured
 run exercises it; `PROPOSED` means a specification with no running system behind it;

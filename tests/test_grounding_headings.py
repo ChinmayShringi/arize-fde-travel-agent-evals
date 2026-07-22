@@ -35,6 +35,7 @@ import pytest
 from evals.context import EvalContext
 from evals.e_grounding import (
     _is_section_label,
+    _known_place_words,
     _mask_section_headings,
     e1_fabricated_entity,
 )
@@ -128,10 +129,15 @@ class TestHeadingIsNotAnEntity:
         ],
     )
     def test_label_headings_are_masked(self, heading):
-        """Every generic section label seen or plausible in the captured runs."""
+        """Every generic section label seen or plausible in the captured runs.
+
+        Place words come from the fixture set: a city in a heading is context,
+        not an invented entity, so "## Hotel Options for Paris" is still a label.
+        """
+        places = _known_place_words(EvalContext.load())
         text = heading.lstrip("# ")
-        assert _is_section_label(text)
-        masked = _mask_section_headings(heading + "\nbody text\n")
+        assert _is_section_label(text, places)
+        masked = _mask_section_headings(heading + "\nbody text\n", places)
         assert text not in masked
         assert len(masked) == len(heading + "\nbody text\n")
         assert "body text" in masked

@@ -20,9 +20,9 @@
   "quality_delta": {
     "candidate-B-flight-tool-fix": {
       "E1": {
-        "control_pass_rate": 96.96969696969697,
+        "control_pass_rate": 100.0,
         "candidate_pass_rate": 100.0,
-        "delta_pp": 3.03,
+        "delta_pp": 0.0,
         "control_applicable": 33,
         "candidate_applicable": 33
       },
@@ -83,5 +83,6 @@
   "decision_time": null,
   "promotion_target": "agent production defaults (PROMPT_VARIANT / FLIGHT_TOOL_FIX)",
   "comparison_report": "docs/loop-runs/interview2-final/comparison.md",
-  "note": "Written by scripts/feedback_loop.py. The loop can only write decision 'pending_human_review' with a null reviewer. A human records the real decision by editing this file; promotion is not automated."
+  "note": "Written by scripts/feedback_loop.py. The loop can only write decision 'pending_human_review' with a null reviewer. A human records the real decision by editing this file; promotion is not automated. E1 re-scored under evaluator v1.3.1: the control arm's single flag was the markdown heading '## Hotel Options', adjudicated as extractor false positive 4 (docs/EVAL_ADJUDICATION.md). E1 delta corrected from +3.03pp to 0pp; the real result is E2 +88.89pp.",
+  "evaluator_version": "v1.3.1"
 }

@@ -18,6 +18,14 @@ Pricing per MTok: Haiku $1/$5, Sonnet 5 $3/$15, Opus 4.8 $15/$75.
 | Sonnet 5 | fixed | 100% | **100%** | 100% | $0.409 | 4.4s |
 | Opus 4.8 | fixed | 100% | **100%** | 100% | $1.922 | 5.1s |
 
+> Evaluator-version caveat: the E1 figures in this table were scored under evaluator
+> v1.2. The `model-opus-4-8` run carries the same section-heading false positive that
+> was adjudicated as finding 4 (`docs/EVAL_ADJUDICATION.md`); re-scored under v1.3.1 its
+> E1 is 30/33 (91%), not 29/33 (88%). The captured artifact is left unedited as evidence.
+> The direction of the finding is unchanged: frontier models on the shipped prompt still
+> fabricate where Haiku does not, because they obey the prompt Haiku ignores.
+
+
 E4 (itinerary off-by-one) is 0% in every cell: it is the backlogged tool bug no
 candidate was authorized to fix; no model can compensate for it, which is itself
 evidence for tool-level attribution. E6's constant single "failure" is the planted
