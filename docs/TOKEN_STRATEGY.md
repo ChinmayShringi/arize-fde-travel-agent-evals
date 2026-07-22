@@ -28,7 +28,7 @@ of caveman-speak, and gated on the E11 tone judge so brevity never buys a tone
 regression silently. MEASURED TRADEOFF: A+B holds E11 tone at 100 percent
 (33/33); v2-concise scores 94 percent (31/33, two flags) for its extra -28
 percent output tokens. Recommendation: ship v1 (A+B) as primary; v2 is the
-quantified concision option for An's team to accept or decline against her
+quantified concision option for Anne's team to accept or decline against her
 rubric. Cost effect at demo scale is small (-1.6 percent: the longer
 v2 prompt adds input) but latency -19 percent is a real UX win, and at production
 volume output tokens are the 5x-priced class.
@@ -59,12 +59,12 @@ it. Monitor usage.cache_read_input_tokens to catch silent invalidation.
 
 ## Model choice is a cost lever with a trap (measured)
 
-Same shipped prompt, same dataset: claude-sonnet-5 costs 5.6x and claude-opus-4-8
-25x per run vs Haiku, with 2-3x the latency, and BOTH fabricate real-sounding
+Same shipped prompt, same dataset: claude-sonnet-5 costs 3.7x and claude-opus-4-8
+8.3x per run vs Haiku, with 2-3x the latency, and BOTH fabricate real-sounding
 hotels with prices on empty tool results (E1 88 percent, E5 57-62 percent vs
 Haiku's 100 percent): stronger instruction-following obeys the shipped prompt's
 gag rules that Haiku ignores. Model upgrades without the eval gate are a
-groundedness regression at 5-25x the price. The fixed-prompt model runs quantify
+groundedness regression at 3.7x to 8.3x the price. The fixed-prompt model runs quantify
 how much of that the prompt fix recovers (docs/experiments/model-*-fixed).
 
 ## Bottom line for Nick

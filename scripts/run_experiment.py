@@ -82,6 +82,9 @@ def _parse_args(argv: list) -> argparse.Namespace:
         prog="run_experiment.py",
         description="Replay a golden dataset through the agent and score it.",
     )
+    redact_default = os.environ.get("EXPERIMENT_REDACT_PII", "1")
+    if redact_default not in REDACT_PII_CHOICES:
+        parser.error("EXPERIMENT_REDACT_PII must be 0 or 1")
     parser.add_argument("--name", required=True, help="Experiment label (AGENT_VERSION).")
     parser.add_argument(
         "--prompt-variant",
@@ -108,7 +111,7 @@ def _parse_args(argv: list) -> argparse.Namespace:
     parser.add_argument(
         "--redact-pii",
         choices=REDACT_PII_CHOICES,
-        default=os.environ.get("EXPERIMENT_REDACT_PII", "1"),
+        default=redact_default,
         help=(
             "1 = apply the serving-path PII redaction before each turn. "
             "1 is the safe default. 0 is an explicit legacy opt-out for reproducing "

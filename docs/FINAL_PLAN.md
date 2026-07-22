@@ -27,8 +27,8 @@ The brief grades three things.
 | Deliverable | State | Where it lives |
 |---|---|---|
 | Working demo: the agent with the automated feedback loop around it | **Delivered.** Seven-stage loop, one entrypoint | `scripts/feedback_loop.py`; runs under `docs/loop-runs/` |
-| Customer-facing presentation | **Delivered** | `docs/PRESENTATION.md` |
-| Codebase link | **Delivered.** Committed and pushed | commit `061307e`, tag `interview2-demo-v1`, origin `github.com/ChinmayShringi/arize-fde-travel-agent-evals` (private); the Arize source repo is now the `upstream` remote. Pre-share checks in `docs/CODEBASE_LINK_CHECK.md` |
+| Customer-facing presentation | **Delivered** | `docs/Interview_2_Customer_Presentation.pptx`; detailed speaker notes in `docs/PRESENTATION.md` |
+| Codebase link | **Delivered.** Public, committed, and pushed | `https://github.com/ChinmayShringi/arize-fde-travel-agent-evals`; tag `interview2-demo-v1`; the Arize source repo is the `upstream` remote |
 
 Graded core requirements and where each is evidenced:
 
@@ -39,19 +39,17 @@ Graded core requirements and where each is evidenced:
 | Automation (repeatable process, any orchestrator) | Implemented | `scripts/feedback_loop.py`, seven stages; scheduling workflow committed at `.github/workflows/feedback-loop.yml` |
 | Skills usage: which Arize/Phoenix tooling, how it helped, what we would automate further | Implemented | `docs/SKILLS_LOG.md` |
 
-One qualification on automation, stated so no one overreads it: the GitHub Actions
-workflow file is committed, but `gh run list --repo ChinmayShringi/arize-fde-travel-agent-evals`
-returns **zero runs** as of 2026-07-21. The scheduler is configured; it has never
-executed on GitHub. Every loop run captured in this repo was invoked locally.
+One qualification on automation, stated so no one overreads it: GitHub Actions CI has
+executed successfully. The scheduled feedback workflow is configured, while every loop
+run captured in this repository was invoked locally.
 
-Test suite: **191 tests collected** (`uv run pytest --collect-only -q`), `pytest` declared
+Test suite: **214 tests collected** (`uv run pytest --collect-only -q`), `pytest` declared
 as a dev dependency in `pyproject.toml`.
 
-One loop run, `docs/loop-runs/interview2-final/`, was still executing when this record
-was written on 2026-07-21. **TBD: fill its numbers from the final loop run.** Nothing in
-this document depends on it. Two earlier loop runs are complete on disk and each carries
-a `loop_report.md`, a `proposal.md`, a curated dataset copy, and its eval output:
-`docs/loop-runs/llm-propose-2026-07-19/` and `docs/loop-runs/selftest-2026-07-19/`.
+The completed historical run at `docs/loop-runs/interview2-final/` carries all seven
+stages, a proposal, paired experiment, comparison, and pending approval record. Its
+limitations are explicit: the experiment used the original dataset and redaction was off.
+Current code corrects both defaults, but a new paid run has not yet measured them together.
 
 ---
 
@@ -133,7 +131,7 @@ recorded here with the reasoning, because the reasoning is what transfers.
 | First automation target | Incorrect tool usage (E3) | Nick: "easiest to implement the automation loop on" |
 | Allowed change types | Prompt change; add a tool call; modify a tool call. Low complexity only | Nick: "not just gonna be like a 40 file PR" |
 | Fixes shipped | Exactly two: prompt (D-01, `PROMPT_VARIANT=v1`) and `search_flights` direction (D-02, `FLIGHT_TOOL_FIX=1`) | Prioritization is the skill under assessment. Every other defect is detected and left in `docs/BACKLOG.md` with severity and owner |
-| Promotion gate | Metric bar **and** human sign-off | Deliberate deviation from Nick; see section 8 |
+| Promotion gate | Metric bar **and** human sign-off | Production authority boundary; see section 8 |
 | Metric bar | 85% (the low end of Nick's range) driving toward 90% | Nick set no threshold: "we don't really have a current threshold... but maybe like 85, 90% would be sufficient". 85 remains the working default because the follow-up question was never sent |
 | Model | `claude-haiku-4-5` | Repo default. Never changed as an unmeasured "fix". Alternative models were measured separately, see `docs/MODEL_COMPARISON.md` |
 | Orchestrator | Single Python entrypoint, cron-scheduled | The assumption recorded in the plan; it held. AX Airflow provider and CI-triggered evaluation named as scale-up paths |
@@ -205,7 +203,7 @@ listed E1 through E9; E10 and E11 were added during the build and are included h
 |---|---|---|---|
 | E8 | `clarification_quality` | `evals/judges.py` | Two-sided: penalizes both peppering the user with questions and assuming when booking-material information is genuinely missing |
 | E9 | `scope_adherence` | `evals/judges.py` | The reply stays inside travel planning and booking, and hands off visa, refund, and policy questions rather than improvising |
-| **E11** | `tone_quality` | `evals/e_tone.py` | **Added during the build.** Scores one reply on four dimensions, all of which must hold to pass: `professional`, `concise`, `no_overpromising` (never claims to have booked, charged, or guaranteed anything the agent cannot actually do), `appropriate_scale`. This is the judge An asked for, to automate what her team spot-checks by hand |
+| **E11** | `tone_quality` | `evals/e_tone.py` | **Added during the build.** Scores one reply on four dimensions, all of which must hold to pass: `professional`, `concise`, `no_overpromising` (never claims to have booked, charged, or guaranteed anything the agent cannot actually do), `appropriate_scale`. This is the judge Anne asked for, to automate what her team spot-checks by hand |
 
 Three properties of the judges that matter for credibility:
 
@@ -214,7 +212,7 @@ Three properties of the judges that matter for credibility:
   preserved verbatim in `evidence["judge"]` so a reviewer can see the disagreement.
 - E11's rubric is explicitly **provisional**. Every result carries
   `evidence["rubric_version"] == "provisional-v1-pending-customer-rubric"`. It is a
-  good-faith first-pass encoding of An's bar, not her team's published rubric, and it is
+  good-faith first-pass encoding of Anne's bar, not her team's published rubric, and it is
   meant to be replaced by theirs.
 - **All three judges are MONITOR-ONLY. None gates a release.** Measured agreement is
   96/96 = 100%, and `docs/JUDGE_CALIBRATION.md` explains at length why that number
@@ -304,9 +302,10 @@ state, and the change is material:
 
 ---
 
-## 8. The deviation from the customer, stated deliberately
+## 8. The production authority boundary
 
-Nick asked for failures to auto-append to the eval dataset with no human gate.
+Nick asked for failures to auto-append to the eval dataset. That curation step is
+automated. The transcript does not authorize autonomous production promotion.
 
 **What was automated:** collect, evaluate, cluster, curate, propose, experiment. All six
 run end to end with no human in the path.
@@ -319,8 +318,8 @@ writes `approval.json` with `decision: "pending_human_review"` and `reviewer: nu
 or a decision time (`scripts/approval.py:162-163`). **There is deliberately no code path
 by which the loop can self-approve.**
 
-This is a recommendation, not a misunderstanding of the ask, and it must be presented as
-one. The argument is the calibration data in `docs/JUDGE_CALIBRATION.md`: the judges have
+The promotion boundary is a production-safety recommendation. The argument is the
+calibration data in `docs/JUDGE_CALIBRATION.md`: the judges have
 seen essentially no failing examples, so their apparent 100% agreement is uninformative.
 Gating on an uncalibrated judge would be worse than not gating. The gate is meant to lift
 once the judges have negative examples to calibrate against.
@@ -367,7 +366,7 @@ from the plan, and only those two are asserted as fact:
   (`docs/baseline/2026-07-19/manifest.json`), at `git_sha 0080b11`, 23 turns, 78 spans,
   22 sessions. An invalidated capture is retained beside it at
   `docs/baseline/2026-07-19-INVALID-stale-server/` and holds 0 spans.
-- The repo was committed and tagged as `061307e` / `interview2-demo-v1`.
+- The public delivery tag `interview2-demo-v1` identifies the reviewed demo release.
 
 Everything else in the table is the plan's sequencing, not a timestamped claim.
 
@@ -396,13 +395,12 @@ Everything above is closed. These are not.
    the assistant." Its pre-send checklist is also unticked. Three consequences follow and
    they should be acknowledged on stage rather than papered over:
    - The metric bar is the working default of **85%**, not a customer-confirmed number.
-   - The PM's name is unreconciled: "An" in the playbook panel list, "Anne" in the session
-     notes and in `CLAUDE.md`. Verify against the calendar invite before addressing her.
+   - The PM's name is **Anne**, verified from her introduction in the supplied transcript.
    - The human-approval gate has not been disclosed to Nick in writing in advance. It will
      be argued live on the 22nd instead, which is a harder position than pre-planting it.
-2. **Interview 1 quotes are not independently re-verifiable.** No transcript is on disk.
-   Every quote attributed to Nick, An, or Luke in this repo traces to session notes, not to
-   a recording. If a panelist disputes a quote, concede the sourcing immediately.
+2. **Interview 1 quotes are re-verifiable against the supplied transcript attachment.**
+   The transcript is not committed to the public repository because it contains personal
+   conversation and location details. Customer-facing claims should still be paraphrased.
 
 Items that were on the old blocker list and are now **resolved**, recorded so nobody
 re-opens them: `ANTHROPIC_API_KEY` (resolved; the baseline and every experiment run

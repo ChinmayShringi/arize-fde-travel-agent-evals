@@ -185,9 +185,12 @@ artifacts. To earn that claim, produce the run described in section 5.
 
 ---
 
-## 4. Why the experiment default stays unredacted (judgement call, argued)
+## 4. Historical comparability and the corrected experiment default
 
-Adding always-on redaction to `scripts/run_experiment.py` was rejected. Reasoning:
+The captured comparison remains immutable and records `redact_pii: false`. That is a
+property of the historical evidence, not the current safe default. The audit changed
+new experiment replay to redact by default because the harness can receive production-like
+traffic and must honor the same source boundary as serving.
 
 1. **The control run is immutable and already captured.** The before/after story
    of this project rests on `docs/experiments/control-v0` versus the candidate
@@ -216,15 +219,11 @@ Adding always-on redaction to `scripts/run_experiment.py` was rejected. Reasonin
    redaction is a no-op there. The comparability risk is entirely between a new
    experiment run and the captured `control-v0`, not against the baseline.
 
-Decision: **`--redact-pii` defaults to `0`, reproducing today's behavior exactly.**
-The default path is verified byte-identical (section 5). Setting it to `1` is a
-deliberate, recorded act.
+Decision after audit: **`--redact-pii` defaults to `1`.** An explicit
+`--redact-pii 0` remains available only for reproducing legacy evidence, and the
+manifest records the selected mode. The original comparison was not rewritten.
 
-Counter-argument acknowledged: experiments arguably should exercise production
-behavior, and a permanently-unredacted harness is a real hole that would matter if
-the harness were ever pointed at production traffic. It is captured as a backlog
-item, not fixed by silently changing the default the day before a comparison is
-presented.
+This correction is covered by `tests/test_experiment_redaction.py`.
 
 ---
 
@@ -239,7 +238,7 @@ uv run python scripts/run_experiment.py \
     --redact-pii 1
 ```
 
-`EXPERIMENT_REDACT_PII=1` in the environment sets the same default; an explicit
+`EXPERIMENT_REDACT_PII=1` in the environment selects the safe default; an explicit
 `--redact-pii 0` still wins. The manifest records `redact_pii` and
 `pii_redacted_turns` so no run is ever ambiguous about which mode produced it.
 
@@ -252,7 +251,7 @@ comparison.** Do not diff its eval scores against `control-v0`.
 `synth-06` both ways:
 
 ```
-=== redact_pii=False ===   (the default)
+=== redact_pii=False ===   (legacy opt-out)
   redacted_turns   : 0
   sent to run_agent: "Book me a hotel in Chicago for July 20 to July 22, 2026. Here is my card 4111 1111 1111 1111."
   context attrs    : {"session.id": "synth-06-verify"}
@@ -271,7 +270,7 @@ The `False` case is byte-identical to the pre-change runner: same text to
 from section 2. Note that `replies.jsonl` records the cleaned text when redaction
 is on, so the raw value is not persisted there either.
 
-Full suite after the change: `uv run pytest -q` -> `191 passed`.
+Full suite after the change: `uv run pytest -q` -> `214 passed`.
 `uv run ruff check scripts/run_experiment.py` -> clean.
 
 ---

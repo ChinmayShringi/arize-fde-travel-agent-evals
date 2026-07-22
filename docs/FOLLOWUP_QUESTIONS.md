@@ -4,7 +4,7 @@ Protocol per playbook section 18: within 24 hours, send only consolidated, mater
 clarification questions. Every item carries the default we proceed with if unanswered,
 so silence never stalls the build.
 
-Panel: Nick Luzio (Director of Product), An Nguyen (PM), Lucas "Luke" Moehlenbrock (VP Eng).
+Panel: Nick Luzio (Director of Product), Anne (Product Manager), Lucas "Luke" Moehlenbrock (VP Eng).
 
 Revised after a 4-lens adversarial review (hiring-panel, customer, completeness vs
 playbook banks, brief auditor). Key changes from draft 1: promotion-gate language no
@@ -18,8 +18,8 @@ Status: DRAFT v2. Chinmay reviews and sends. Never sent by the assistant.
 
 ## Pre-send checklist for Chinmay
 
-- [ ] Verify the PM's name spelling ("An" per playbook panel list vs "Anne" in session
-      notes) against the calendar invite or her email address, then reconcile CLAUDE.md.
+- [x] Verify the PM's name spelling. The supplied transcript records her introduction as
+      "I'm Anne."
 - [ ] Confirm you are comfortable disclosing the human sign-off recommendation now
       (recommended: it is the honest play and pre-plants the 22nd) rather than holding it.
 - [ ] Adjust the reply-by date if you send this later than Thursday night.
@@ -30,7 +30,7 @@ Status: DRAFT v2. Chinmay reviews and sends. Never sent by the assistant.
 
 Subject: Follow-ups from today's call: four questions plus my working defaults
 
-Hi Nick, An, Luke,
+Hi Nick, Anne, Luke,
 
 Thank you all for the time today. I am building against what we agreed: the
 planning-to-itinerary-to-booking workflow as the anchor, groundedness as the primary
@@ -55,7 +55,7 @@ Questions
    separately, using 85 (the low end of your range) as the bar and 90 as the target
    we drive toward.
 
-3. An: does your team have any rubric, checklist, or notes from manual quality
+3. Anne: does your team have any rubric, checklist, or notes from manual quality
    reviews, even informal ones? I would use them to calibrate the automated grader
    against your team's judgment and report the agreement rate. Default: I hand-label
    a calibration sample myself and show that agreement number.
@@ -114,7 +114,7 @@ internal until the presentation.
 | 1 | Production volume | Design production plan for the brief's millions-per-day framing |
 | 2 | Promotion approver [email] | PM team signs off; presented as recommendation with calibration data |
 | 3 | Alert routing and severity | Slack channel + weekly review; P0 fabricated inventory, P1 coverage/scope, P2 telemetry |
-| 4 | Dataset/rubric ownership after handoff | An's team owns labels and rubric; engineering owns evaluator code (playbook D08) |
+| 4 | Dataset/rubric ownership after handoff | Anne's team owns labels and rubric; engineering owns evaluator code (playbook D08) |
 | 5 | Data residency / retention [email] | AX cloud US; verify free-tier retention at signup; export all artifacts to disk regardless |
 | 6 | Loop trigger and orchestrator | Scheduled run (GitHub Actions cron, local fallback) this phase; CI-triggered evaluation and the AX Airflow provider named as scale-up paths |
 | 7 | Business-outcome baseline | No conversion number exists; groundedness reported as the leading proxy; no conversion figure will be claimed (hard rule: never fabricate a number) |

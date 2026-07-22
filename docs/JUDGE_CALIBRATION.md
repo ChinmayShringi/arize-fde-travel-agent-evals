@@ -137,7 +137,7 @@ All four dimensions must hold (recomputed at `e_tone.py:199`):
 4. **appropriate_scale** (`e_tone.py:160-163`): a one-line question gets a compact
    answer; an open planning request may get a longer structured one.
 
-The rubric is explicitly provisional and is not An's team's own rubric
+The rubric is explicitly provisional and is not Anne's team's own rubric
 (`e_tone.py:25-32`). That caveat is inherited by every number in this document.
 
 ---
@@ -321,9 +321,8 @@ The judge reached the same verdict on AB but the opposite underlying fact on C. 
 verdict survived by luck: under E9-style recomputation a wrong `needed` still lands on
 pass when `question_count` moves with it.
 
-This independently confirms the claim already recorded at
-`docs/PROJECT_AUDIT_2026-07-21.md:239` ("Identical follow-up text receives inconsistent
-'clarification needed' reasoning between candidates"), and localises it to 1 of 33 rows.
+This identifies inconsistent "clarification needed" reasoning between candidates and
+localises it to 1 of 33 rows.
 
 **Fix, before E8 is trusted on conversational traffic:** pass prior-turn context into
 the E8 prompt. The dataset here is 33 turns across 31 conversations, of which only 2
@@ -363,7 +362,7 @@ It says nothing about *offering* a capability the agent does not have. In this r
   with that." There is no handoff mechanism.
 
 Both the judge and the labeller passed all of these, correctly, because the rubric as
-written does not cover them. That is a rubric defect, not a judge defect. An's team
+written does not cover them. That is a rubric defect, not a judge defect. Anne's team
 would very plausibly score a promise to book as a tone failure, and that is precisely
 the kind of divergence a real calibration round with them should surface.
 
@@ -422,8 +421,7 @@ Two of those self-resolved dates are also simply wrong: July 25, 2026 is a Satur
 not a Friday, and the reply to the Denver "this weekend" row calls July 26 a Saturday
 and July 27 a Sunday when they are a Sunday and a Monday.
 
-The audit's related and correct observation at `docs/PROJECT_AUDIT_2026-07-21.md:80`
-is that there is "no same-dataset control judge run". That is the actual gap: **build a
+There is no same-dataset control judge run. That is the actual gap: **build a
 same-dataset, same-replies, two-model judge run before making any claim about judge
 model choice.** It costs one extra judge pass over spans already on disk.
 
@@ -444,7 +442,7 @@ It does not block a promotion.
 
 All five, per eval:
 
-1. **Domain-owner labels.** At least 50 rows labelled by An's product team, not by the
+1. **Domain-owner labels.** At least 50 rows labelled by Anne's product team, not by the
    candidate and not by an AI. These are the people whose spot-checking the judge is
    replacing; their standard is the target.
 2. **Negative examples in the set.** At least 10 rows that a domain owner labels fail.
@@ -461,7 +459,7 @@ All five, per eval:
    from a rubric that is ambiguous, which is exactly the confusion D1 sits in.
 
 E11 additionally must not be gated on the provisional rubric under any circumstances.
-It needs An's team's own rubric first, at which point `_E11_SYSTEM` and the
+It needs Anne's team's own rubric first, at which point `_E11_SYSTEM` and the
 `RUBRIC_VERSION` constant both change and this whole exercise is repeated.
 
 ### 5.2 Cheapest next actions, in order
@@ -490,9 +488,9 @@ It needs An's team's own rubric first, at which point `_E11_SYSTEM` and the
   99 rows. `human_label` is **pre-populated with the AI-proposed label as a starting
   point only**, so a reviewer edits disagreements rather than typing 99 cells. Until
   `human_reviewed` flips, `human_label` is not a human label.
-- **These are not An's team's labels.** They are not customer ground truth and must
+- **These are not Anne's team's labels.** They are not customer ground truth and must
   never be presented as such, in the deck or anywhere else. The intended path is
-  candidate review first, then a real labelling round with An's team.
+  candidate review first, then a real labelling round with Anne's team.
 - **Judge:** `claude-sonnet-5` for all three evals in this run, confirmed from
   `evidence.judge_model` for E11 and from the `JUDGE_MODEL` default at `judges.py:39`
   for E8 and E9. Note that E8 and E9 do **not** record the judge model in their
@@ -512,7 +510,7 @@ It needs An's team's own rubric first, at which point `_E11_SYSTEM` and the
 4. **5 of 99 rows were labelled after the verdict was already known** (section 1.3), and
    3 of those are the only E8 rows with any discriminating power (D6).
 5. **AI-proposed labels are not domain expertise.** The labeller applied the written
-   rubric faithfully; it does not know what An's team would actually accept from a
+   rubric faithfully; it does not know what Anne's team would actually accept from a
    customer-facing reply. D4 is a concrete example of the gap: 13 replies offer to book
    something the agent cannot book, and the rubric as written passes all of them.
 6. **E11's rubric is provisional and self-declared as such** (`e_tone.py:25-32`). Every

@@ -452,3 +452,71 @@ def test_results_without_trace_context_still_degrade_to_an_appendable_case():
     assert len(cases) == 1
     assert cases[0]["messages"] == ["Flights to Austin?"]
     assert cases[0]["tool_calls"] == []
+
+
+def test_structured_cases_redact_pii_from_historical_unredacted_context():
+    import feedback_loop
+
+    card = "4111 1111 1111 1111"
+    ctx = {
+        "messages": [f"Book a hotel with card {card}"],
+        "assistant_reply": f"I received {card}",
+        "tool_calls": [{"name": "search_hotels", "arguments": {"note": card}}],
+        "tool_outputs": [{"name": "search_hotels", "output": {"note": card}}],
+        "session_id": "s1",
+        "pii_redacted": False,
+    }
+
+    cases = feedback_loop._structured_cases(
+        [_failing_result("t1", "E1", f"echoed {card}", ctx)]
+    )
+
+    serialized = json.dumps(cases)
+    assert card not in serialized
+    assert "[REDACTED-CARD]" in serialized
+    assert cases[0]["pii_redacted"] is True
+
+
+def test_legacy_rows_without_trace_ids_do_not_merge_unrelated_inputs():
+    import feedback_loop
+
+    cases = feedback_loop._structured_cases(
+        [
+            {"user_input": "Flights to Austin?", "eval_id": "E1", "passed": False},
+            {"user_input": "Hotels in Denver?", "eval_id": "E1", "passed": False},
+        ]
+    )
+
+    assert [case["messages"] for case in cases] == [
+        ["Flights to Austin?"],
+        ["Hotels in Denver?"],
+    ]
+
+
+def test_llm_proposal_prompt_redacts_pii_from_result_examples():
+    import feedback_loop
+
+    card = "4111 1111 1111 1111"
+    clusters = {
+        ("E2", "tool"): {
+            "name": "flight_direction",
+            "count": 1,
+            "examples": [f"flight requested with {card}"],
+            "trace_ids": ["t1"],
+        }
+    }
+    results = [
+        {
+            "passed": False,
+            "eval_id": "E2",
+            "attribution": "tool",
+            "user_input": f"flight requested with {card}",
+            "reason": f"tool echoed {card}",
+            "evidence": {"raw": card},
+        }
+    ]
+
+    prompt, _ = feedback_loop._build_llm_user_prompt(clusters, results)
+
+    assert card not in prompt
+    assert "[REDACTED-CARD]" in prompt

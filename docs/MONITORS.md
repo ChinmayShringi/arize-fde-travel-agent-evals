@@ -39,7 +39,7 @@ gap of 6, is 3 with a gap of 5), and the **tokens-per-session threshold** (was
 Two sources define the required set, and they are cited separately because they
 say different things. `docs/FINAL_PLAN.md:117-119` names **5** types explicitly
 (groundedness rate, loop rate, p95 latency, tokens/session, tool-error rate).
-`docs/REMEDIATION_PLAN.md:52` (audit item P1-09) raises that to **7** by adding
+The delivery audit raises that to **7** by adding
 PII redaction detection rate and cost per interaction, and records that 3 of the
 7 were missing here. This document previously specified 5 monitors and covered
 only 4 of the 7. The three gaps are now closed.

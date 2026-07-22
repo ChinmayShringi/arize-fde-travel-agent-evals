@@ -57,3 +57,48 @@ def test_main_uses_curated_dataset_for_proposal_and_experiment(monkeypatch, tmp_
         "proposal_dataset": curated_dataset,
         "experiment_dataset": curated_dataset,
     }
+
+
+def test_main_refuses_to_reuse_nonempty_evidence_directory(tmp_path):
+    source_dataset = tmp_path / "golden.json"
+    source_dataset.write_text("{}")
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    sentinel = run_dir / "loop_report.md"
+    sentinel.write_text("immutable evidence")
+
+    result = feedback_loop.main(
+        ["--dataset", str(source_dataset), "--out", str(run_dir)]
+    )
+
+    assert result == 2
+    assert sentinel.read_text() == "immutable evidence"
+
+
+def test_cluster_and_proposal_never_persist_raw_pii(tmp_path):
+    card = "4111 1111 1111 1111"
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    reporter = feedback_loop.Reporter(run_dir / "loop_report.md")
+    results = [
+        {
+            "passed": False,
+            "eval_id": "E2",
+            "name": "flight_direction",
+            "attribution": "tool",
+            "trace_id": "t1",
+            "user_input": f"Book this flight with {card}",
+        }
+    ]
+
+    clusters = feedback_loop.cluster(reporter, results)
+    feedback_loop.propose(
+        reporter,
+        clusters,
+        tmp_path / "golden.json",
+        run_dir,
+    )
+
+    written = (run_dir / "loop_report.md").read_text() + (run_dir / "proposal.md").read_text()
+    assert card not in written
+    assert "[REDACTED-CARD]" in written

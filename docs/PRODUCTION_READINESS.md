@@ -278,8 +278,8 @@ Scale math kept honest from the measured baseline (~3.4 spans/turn):
   spans keep the two lanes separable in the monitors.
 - **Human gate on promotion AND rollback.** The loop always emits
   `PROMOTION: BLOCKED pending human approval` (stage 7 GATE) and never flips agent
-  defaults on its own. This is the deliberate, stated deviation from Nick's
-  "no human gate" request in `CLAUDE.md`: automate collect -> evaluate -> cluster ->
+  defaults on its own. The transcript asks to automate failure curation, but does not
+  authorize autonomous production promotion: automate collect -> evaluate -> cluster ->
   propose -> experiment, gate the promotion. `scripts/approval.py` holds the approval
   logic and the gate stage always writes `approval.json` with decision
   `pending_human_review` and reviewer `null` (`scripts/approval.py:26-27`;

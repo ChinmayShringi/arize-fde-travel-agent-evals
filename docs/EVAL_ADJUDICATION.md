@@ -1,4 +1,4 @@
-# Eval Calibration Record: v1 to v1.3
+# Eval Calibration Record: v1 to v1.3.1
 
 Deterministic evals need calibration exactly like judges do. First scoring of the
 four experiment runs surfaced three false positives; a fourth was found later,
@@ -16,14 +16,15 @@ final loop run are preserved in its evals-v1.2/ directories.
 | 1 | "$725 (invention)" in the multi-turn Miami reply | JetBlue $189 + hotel total $536 = $725: legitimate cross-item sum | v1.2: derivation rule extended to sums of two grounded option prices |
 | 2 | "$4 (invention)" in the Chicago-Denver reply | Fare delta $152 - $148 = $4 ("just $4 more"): legitimate arithmetic | v1.2: derivation rule extended to differences of two grounded prices |
 | 3 | "Hotel Lumiere (invention)" under candidate A | The tool returned the hotel; the model restyled "Hotel" as the French "Hotel" with a circumflex, defeating accent-sensitive matching | v1.2: diacritic folding (NFKD strip) applied to both reply mentions and grounding text |
-| 4 | "Hotel Options (invention)" in the final loop run's control arm | "## Hotel Options" is the markdown section heading above the hotel list, not a hotel. The two hotels under it were tool-returned and passed | v1.3: markdown section-label headings are removed before hotel-mention extraction |
+| 4 | "Hotel Options (invention)" in the final loop run's control arm | "## Hotel Options" is the markdown section heading above the hotel list, not a hotel. The two hotels under it were tool-returned and passed | v1.3: markdown section-label headings are removed before hotel-mention extraction. **v1.3.1 narrowed that mask after it was found to be too broad; see "Finding 4b" below** |
+| 4b | The v1.3 fix itself, caught in review before the presentation | v1.3 blanked an **entire** heading whenever any structure noun appeared, so `## Hotel Options: Hotel Van Zandt` would have hidden a genuine invention. A false negative in E1 is strictly worse than the false positive it was fixing | v1.3.1: a heading is masked only when a structure noun is present **and** every remaining word is generic or a known fixture city |
 
 Guard on the guard (findings 1 and 2): only price-like grounded numbers (>= $50)
 seed the derivation and only two operands combine, keeping the false-negative
 surface small; a probe value not derivable from grounded prices still flags
 (unit-checked).
 
-## Finding 4 in detail (v1.3)
+## Finding 4 in detail
 
 Found on the day before the presentation, while checking every number that was
 going into the deck.
@@ -51,26 +52,58 @@ grounded. The Title-Case run tokenizer in `evals/entities.py` also matched the
 heading itself, because "Hotel Options" contains the hotel keyword "hotel". Same
 class as findings 1 to 3: the reply was correct and the rule was not.
 
-**The fix.** `evals/e_grounding.py` now masks markdown section-label headings
-before extracting hotel mentions (`_mask_section_headings`, `_is_section_label`,
-`_hotel_mentions`). A heading is treated as a label only when it is both:
+**The fix.** `evals/e_grounding.py` masks markdown section-label headings before
+extracting hotel mentions (`_mask_section_headings`, `_is_section_label`,
+`_known_place_words`, `_hotel_mentions`). The masking substitutes spaces of equal
+length, so every character offset the price-attachment rule computes stays valid.
 
-1. a markdown ATX heading line (`^#{1,6} `), and
-2. built from a generic document-structure noun (options, recommendations,
-   choices, picks, summary, results, and similar).
+The rule shipped in two steps, and the second one matters more than the first.
 
-The masking substitutes spaces of equal length, so every character offset the
-price-attachment rule computes stays valid.
+**v1.3 (too broad).** A heading was treated as a label when it was a markdown ATX
+heading line (`^#{1,6} `) that *contained* a generic document-structure noun
+(options, recommendations, choices, picks, summary, results, and similar). Any
+match blanked the entire heading.
+
+**v1.3.1 (shipped).** A heading is masked only when **both** hold:
+
+1. it contains a document-structure noun, **and**
+2. every *other* word in it is either generic connective/travel vocabulary or a
+   city that actually appears in the fixture set.
+
+Condition 2 is the correction. The place words are derived at scoring time from
+`EvalContext` (`hotel_cities`, `flight_cities`, `weather_cities`) rather than
+hard-coded, so the mask cannot silently drift away from the fixtures it is
+supposed to track.
+
+## Finding 4b in detail: the fix that needed fixing
+
+v1.3 was caught in review, before the presentation, by asking the question that
+should be asked of any relaxed safety check: not "did the noise stop" but "does
+the check still fire on the thing it exists to catch".
+
+It did not. Under v1.3, `## Hotel Options: Hotel Van Zandt` matched on "Options"
+and the **whole** heading was blanked, including a hotel no tool returned. The
+fix for a false positive had created a false negative in the project's primary
+eval, which is the strictly worse direction: a false positive costs a wasted
+investigation, a false negative means fabricated inventory ships while the
+dashboard stays green.
 
 The fix is deliberately not "ignore anything starting with Hotel". That would
-have disabled the primary eval of the project. Both directions are pinned in
-`tests/test_grounding_headings.py`:
+have disabled the primary eval outright. Both directions are pinned in
+`tests/test_grounding_headings.py`, and the discriminating cases are:
 
-- `## Hotel Options` is not a candidate entity, and the grounded hotels and
-  prices beneath it are still recognised.
-- An invented `Hotel Bellevue` that no tool returned is still flagged, in the
-  body **and** as a heading of its own, because "Bellevue" is not a
-  structure noun. Keying on structure alone would have missed that one.
+| Heading | Masked | Why |
+|---|---|---|
+| `## Hotel Options` | yes | structure noun, nothing else |
+| `## Hotel Options for Paris` | yes | remainder is a fixture city, so it is context |
+| `## Denver Hotel Options` | yes | same, city leading |
+| `## Inn Suggestions`, `## Resort Comparison` | yes | accommodation noun plus structure noun |
+| `## Hotel Options: Hotel Van Zandt` | **no** | "Van Zandt" is neither generic nor a fixture city |
+| `## Hotel Options and the Crawford Hotel` | **no** | "Crawford" is an ungrounded brand |
+| `## Hilton Options` | **no** | "Hilton" is an ungrounded brand |
+| `## Hotel Bellevue` | **no** | no structure noun at all |
+
+The last four are the ones that would have regressed silently under v1.3.
 
 ## Effect on results
 
@@ -103,26 +136,42 @@ the already-captured spans of both arms:
   candidate 8/8 (100%), a +89pp delta from the tool fix, unaffected by this
   adjudication.
 
+v1.3 to v1.3.1, same two arms, re-scored again over the same captured spans:
+
+| Eval | Arm | v1.3 | v1.3.1 |
+|---|---|---|---|
+| E1 | control | 33/33 (100%) | 33/33 (100%) |
+| E1 | candidate-B-flight-tool-fix | 33/33 (100%) | 33/33 (100%) |
+
+- **No captured score changes.** Narrowing the mask was a correctness fix to the
+  rule, not a re-scoring event: none of the captured replies happened to contain
+  a heading that pairs a structure noun with an ungrounded name, which is the only
+  shape the two versions disagree on. The v1.3 hole was real but had not yet been
+  hit by the data, which is exactly the kind of latent gap that ships quietly.
+- Reproduce with `uv run python evals/run_evals.py <arm>/spans.jsonl <outdir>`
+  against either arm under `docs/loop-runs/interview2-final/experiments/`.
+
 Other captured runs carrying the same false positive (left unedited, they are
 captured evidence; caveat them if they are shown):
 
 - `docs/experiments/model-opus-4-8/evals/results.jsonl` and its second scoring
   copy `docs/evals/e10-scoring-model-opus-4-8/results.jsonl`: one E1 row flagged
   "Hotel Recommendations (invention)" on the same Paris itinerary prompt, again a
-  `##` heading. E1 there reads 29/33 (88%) as captured; re-scored under v1.3 it
-  is 30/33 (91%).
+  `##` heading. E1 there reads 29/33 (88%) as captured; re-scored under v1.3.1 it
+  is 30/33 (91%). The direction of the model-comparison finding is unchanged
+  either way.
 - No other current-scoring run is affected. Verified by re-scoring every captured
-  `spans.jsonl` in `docs/` under v1.3 into a scratch directory and diffing row by
+  `spans.jsonl` in `docs/` into a scratch directory and diffing row by
   row against the committed results. The remaining E1 failures in the
   model-comparison runs are real inventions (Hilton, Marriott, Kimpton, Crawford
-  Hotel and similar brands that no fixture returned) and still fail under v1.3.
+  Hotel and similar brands that no fixture returned) and still fail under v1.3.1.
   The `evals-v1/` directories differ, as they always did, because they predate
   findings 1 to 3.
 
 ## Why this is presented rather than hidden
 
 The adjudication workflow (score, inspect failures, adjudicate against raw traces,
-fix the rule, re-score, keep the audit trail) is the same loop An's team would
+fix the rule, re-score, keep the audit trail) is the same loop Anne's team would
 own for judge calibration. Showing a deterministic eval going through it proves the
 workflow on real data and prevents a +6pp claim that would not have survived a
 panel question.

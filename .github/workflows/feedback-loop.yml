@@ -62,15 +62,23 @@ jobs:
     needs: gates
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    env:
-      # Empty unless the secret is configured; the paid steps key off this.
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
       - name: Sync dependencies
         run: uv sync --all-extras --dev
+
+      - name: Check paid-run credential availability
+        id: anthropic
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
 
       # Baseline spans stand in for freshly exported production traces; point
       # --spans at real traces once this repo ingests them.
@@ -91,7 +99,9 @@ jobs:
       # Manual path only. The booleans are typed inputs used solely in this
       # condition; they are never interpolated into a shell command.
       - name: Run loop (LLM proposer, drafts only, never applied)
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.propose_with_llm && env.ANTHROPIC_API_KEY != '' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.propose_with_llm && steps.anthropic.outputs.available == 'true' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: >
           uv run python scripts/feedback_loop.py
           --spans docs/baseline/2026-07-19/spans.jsonl
@@ -102,7 +112,9 @@ jobs:
 
       # Experiments without the LLM proposer, for measuring a registry candidate.
       - name: Run loop (experiments only)
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_experiments && !inputs.propose_with_llm && env.ANTHROPIC_API_KEY != '' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_experiments && !inputs.propose_with_llm && steps.anthropic.outputs.available == 'true' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: >
           uv run python scripts/feedback_loop.py
           --spans docs/baseline/2026-07-19/spans.jsonl
@@ -114,7 +126,7 @@ jobs:
       # but no key is configured, so a dispatch never looks successful without
       # having done the thing that was asked for.
       - name: Fail if a paid run was requested without a key
-        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.propose_with_llm || inputs.run_experiments) && env.ANTHROPIC_API_KEY == '' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.propose_with_llm || inputs.run_experiments) && steps.anthropic.outputs.available != 'true' }}
         run: |
           echo "A paid run was requested but the ANTHROPIC_API_KEY secret is not configured." >&2
           exit 1
@@ -123,7 +135,7 @@ jobs:
       # immutable evidence that is already committed and must not be re-bundled.
       - name: Upload loop artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: feedback-loop-run
           path: docs/loop-runs/ci-*

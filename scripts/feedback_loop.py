@@ -53,6 +53,7 @@ Immutable style: loaded structures are never mutated in place.
 
 import argparse
 import ast
+import hashlib
 import json
 import os
 import re
@@ -199,6 +200,25 @@ def _ascii(text: str) -> str:
     return text.replace("\u2014", "-").replace("\u2013", "-")
 
 
+def _redact_value(value):
+    """Return a recursively redacted JSON-like value and whether it changed."""
+    from agent.redaction import redact
+
+    if isinstance(value, str):
+        clean, findings = redact(value)
+        return clean, bool(findings)
+    if isinstance(value, list):
+        cleaned = [_redact_value(item) for item in value]
+        return [item for item, _ in cleaned], any(changed for _, changed in cleaned)
+    if isinstance(value, dict):
+        cleaned = {key: _redact_value(item) for key, item in value.items()}
+        return (
+            {key: item for key, (item, _) in cleaned.items()},
+            any(changed for _, changed in cleaned.values()),
+        )
+    return value, False
+
+
 class Reporter:
     """Echoes each line to stdout and appends it to <run_dir>/loop_report.md so the
     run is legible live and as an artifact. New content only; never rewrites."""
@@ -298,7 +318,8 @@ def cluster(reporter: Reporter, results: list) -> dict:
             clusters[key] = slot
         slot["count"] += 1
         if len(slot["examples"]) < 3:
-            slot["examples"].append(r.get("user_input", ""))
+            safe_input, _ = _redact_value(r.get("user_input", ""))
+            slot["examples"].append(safe_input)
             slot["trace_ids"].append(r.get("trace_id", ""))
 
     if not clusters:
@@ -329,30 +350,51 @@ def _structured_cases(results: list) -> list:
         if r.get("passed"):
             continue
         ctx = r.get("trace_context") or {}
-        messages = ctx.get("messages") or ([r["user_input"]] if r.get("user_input") else [])
-        if not messages:
+        raw_messages = ctx.get("messages") or ([r["user_input"]] if r.get("user_input") else [])
+        if not raw_messages:
             continue
         trace_id = r.get("trace_id", "")
-        if trace_id not in by_trace:
-            order.append(trace_id)
-            by_trace[trace_id] = {
+        if trace_id:
+            trace_key = trace_id
+        else:
+            fingerprint = json.dumps(raw_messages, sort_keys=True, ensure_ascii=True)
+            trace_key = f"legacy:{hashlib.sha256(fingerprint.encode()).hexdigest()}"
+        messages, messages_redacted = _redact_value(raw_messages)
+        assistant_reply, reply_redacted = _redact_value(ctx.get("assistant_reply", ""))
+        tool_calls, calls_redacted = _redact_value(ctx.get("tool_calls", []))
+        tool_outputs, outputs_redacted = _redact_value(ctx.get("tool_outputs", []))
+        if trace_key not in by_trace:
+            order.append(trace_key)
+            by_trace[trace_key] = {
                 "messages": messages,
-                "assistant_reply": ctx.get("assistant_reply", ""),
-                "tool_calls": ctx.get("tool_calls", []),
-                "tool_outputs": ctx.get("tool_outputs", []),
+                "assistant_reply": assistant_reply,
+                "tool_calls": tool_calls,
+                "tool_outputs": tool_outputs,
                 "source_trace_id": trace_id or None,
                 "source_session_id": ctx.get("session_id") or r.get("session_id"),
-                "pii_redacted": bool(ctx.get("pii_redacted", False)),
+                "pii_redacted": bool(
+                    ctx.get("pii_redacted", False)
+                    or messages_redacted
+                    or reply_redacted
+                    or calls_redacted
+                    or outputs_redacted
+                ),
                 "failed_eval_ids": [],
                 "failure_reasons": [],
             }
-        slot = by_trace[trace_id]
+        slot = by_trace[trace_key]
         eval_id = r.get("eval_id", "")
         if eval_id and eval_id not in slot["failed_eval_ids"]:
             slot["failed_eval_ids"] = [*slot["failed_eval_ids"], eval_id]
         reason = r.get("reason", "")
         if reason:
-            slot["failure_reasons"] = [*slot["failure_reasons"], f"{eval_id}: {reason}"]
+            safe_reason, reason_redacted = _redact_value(reason)
+            slot["failure_reasons"] = [
+                *slot["failure_reasons"],
+                f"{eval_id}: {safe_reason}",
+            ]
+            if reason_redacted:
+                slot["pii_redacted"] = True
     return [by_trace[t] for t in order]
 
 
@@ -553,12 +595,15 @@ def _build_llm_user_prompt(clusters: dict, results: list) -> tuple:
             f"{slot['count']} failing trace(s)"
         )
         for i, row in enumerate(_llm_example_rows(results, eval_id, attribution), 1):
-            ev = json.dumps(row.get("evidence", {}), ensure_ascii=True)
+            safe_evidence, _ = _redact_value(row.get("evidence", {}))
+            safe_user_input, _ = _redact_value(row.get("user_input", ""))
+            safe_reason, _ = _redact_value(row.get("reason", ""))
+            ev = json.dumps(safe_evidence, ensure_ascii=True)
             if len(ev) > 1200:
                 ev = ev[:1200] + "...(truncated)"
             parts.append(f"    example {i}:")
-            parts.append(f"      user_input: {row.get('user_input', '')!r}")
-            parts.append(f"      reason: {row.get('reason', '')!r}")
+            parts.append(f"      user_input: {safe_user_input!r}")
+            parts.append(f"      reason: {safe_reason!r}")
             parts.append(f"      attribution: {row.get('attribution', '')}")
             parts.append(f"      evidence: {ev}")
         if attribution == "model":
@@ -912,6 +957,9 @@ def main(argv: list) -> int:
         return 2
 
     run_dir = Path(args.out)
+    if run_dir.exists() and (not run_dir.is_dir() or any(run_dir.iterdir())):
+        print(f"output directory must be new or empty: {run_dir}", file=sys.stderr)
+        return 2
     run_dir.mkdir(parents=True, exist_ok=True)
     reporter = Reporter(run_dir / "loop_report.md")
 

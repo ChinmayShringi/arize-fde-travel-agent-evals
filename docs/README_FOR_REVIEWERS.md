@@ -30,11 +30,12 @@ system.
 | # | Open | Why |
 |---|---|---|
 | 1 | **This file** | Orientation and repro commands |
-| 2 | `docs/EVIDENCE_INDEX.md` | Which captured run is authoritative and which is superseded. Read before citing any number |
-| 3 | `docs/loop-runs/interview2-final/loop_report.md` | The authoritative loop run. All seven stages, produced by one command |
-| 4 | `docs/loop-runs/interview2-final/comparison.md` | The measured control-versus-candidate result |
-| 5 | `docs/loop-runs/interview2-final/approval.json` | The gate. `"decision": "pending_human_review"`, `"reviewer": null`, promotion blocked |
-| 6 | `docs/REQUIREMENT_MAP.md` | Every customer requirement mapped to the component that answers it and the artifact that proves it, with an explicit IMPLEMENTED / PROPOSED / GAP status per row |
+| 2 | `docs/Interview_2_Customer_Presentation.pptx` | The customer-facing presentation |
+| 3 | `docs/EVIDENCE_INDEX.md` | Which captured run is authoritative and which is superseded. Read before citing any number |
+| 4 | `docs/loop-runs/interview2-final/loop_report.md` | The authoritative historical loop run, produced by one command |
+| 5 | `docs/loop-runs/interview2-final/comparison.md` | The measured control-versus-candidate result |
+| 6 | `docs/loop-runs/interview2-final/approval.json` | The gate. `"decision": "pending_human_review"`, `"reviewer": null`, promotion blocked |
+| 7 | `docs/REQUIREMENT_MAP.md` | Customer requirements mapped to components and evidence |
 
 Supporting reading, in descending order of usefulness:
 
@@ -54,8 +55,7 @@ Supporting reading, in descending order of usefulness:
 
 ## 3. Reproduce it
 
-All commands run **from the repository root**:
-`/Users/chinmay_shringi/Desktop/sar/sample-travel-agent`.
+All commands run from the cloned repository root.
 
 ### 3a. Offline. No credentials, no API key, no network, no spend.
 
@@ -75,7 +75,7 @@ Real output:
 ........................................................................ [ 37%]
 ........................................................................ [ 75%]
 ...............................................                          [100%]
-191 passed in 1.39s
+214 passed
 ```
 
 **Command 2: re-score the frozen baseline from its captured spans.**
@@ -198,8 +198,8 @@ Set the key first (`.env.example` lists every variable):
 cp .env.example .env   # then set ANTHROPIC_API_KEY
 ```
 
-**The whole loop, all seven stages, one command.** This is the command that
-produced `docs/loop-runs/interview2-final/`:
+**The whole current loop, all seven stages, one command.** This creates new evidence
+with source redaction enabled and passes the curated dataset into the experiment:
 
 ```bash
 uv run python scripts/feedback_loop.py \
@@ -212,8 +212,12 @@ uv run python scripts/feedback_loop.py \
 Note: point `--out` at a **new** directory. `docs/loop-runs/interview2-final/` is
 captured evidence and must not be overwritten. `--propose-with-llm` adds one
 `claude-opus-4-8` call that drafts a bounded diff; that diff is **never applied**.
-`--run-experiments` is what makes it replay the 33-turn golden dataset twice
-(control and candidate), which is the bulk of the spend.
+`--run-experiments` replays the newly curated dataset through the control and candidate,
+which is the bulk of the spend. Its turn count depends on the failures curated by that run.
+
+The historical `interview2-final` run was captured by older code at commit `061307e`.
+It replayed the original 33-turn dataset and recorded redaction off. Preserve it as
+historical evidence; do not describe the current command as a byte-for-byte reproduction.
 
 **A single experiment arm:**
 
@@ -259,7 +263,7 @@ Read this section before repeating any claim from this repo out loud.
 | PII redaction at source | `agent/redaction.py`, called in `agent/api.py` and `agent/chat.py` | 26 tests in `tests/test_redaction.py`. **See the honest limit below** |
 | Nightly scheduled loop | `.github/workflows/feedback-loop.yml` (`cron: "0 7 * * *"`) | Registry-only on cron; no model calls, so scheduled spend is zero |
 
-191 tests pass (`uv run pytest -q`, section 3a).
+214 tests pass (`uv run pytest -q`, section 3a).
 
 ### Proposed only (a written specification with no running system behind it)
 
