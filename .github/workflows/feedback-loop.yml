@@ -1,0 +1,43 @@
+# Nightly automated improvement loop: evaluate -> cluster -> curate -> propose -> gate.
+# Runs WITHOUT --run-experiments by default (no API key needed, no model calls).
+# Experiments run only when the ANTHROPIC_API_KEY secret is configured (see the if:).
+# The loop never mutates the committed dataset; it curates a copy and uploads artifacts.
+name: feedback-loop
+
+on:
+  schedule:
+    - cron: "0 7 * * *"   # 07:00 UTC nightly
+  workflow_dispatch: {}    # manual trigger
+
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    env:
+      # Empty unless the secret is set; the experiment step keys off this.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      # Baseline spans stand in for freshly exported production traces; point --spans
+      # at real traces when this repo ingests them.
+      - name: Run loop (no experiments)
+        run: >
+          uv run python scripts/feedback_loop.py
+          --spans docs/baseline/2026-07-19/spans.jsonl
+          --dataset evals/golden_dataset.json
+          --out loop-runs/nightly
+      - name: Run loop with experiments (only when API key is configured)
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        run: >
+          uv run python scripts/feedback_loop.py
+          --spans docs/baseline/2026-07-19/spans.jsonl
+          --dataset evals/golden_dataset.json
+          --out loop-runs/nightly-experiments
+          --run-experiments
+      - name: Upload loop artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: feedback-loop-run
+          path: loop-runs/

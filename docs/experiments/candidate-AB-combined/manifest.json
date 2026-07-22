@@ -1,0 +1,11 @@
+{
+  "name": "candidate-AB-combined",
+  "prompt_variant": "v1",
+  "flight_tool_fix": "1",
+  "dataset_version": "v1-2026-07-19",
+  "dataset_path": "/Users/chinmay_shringi/Desktop/sar/sample-travel-agent/evals/golden_dataset.json",
+  "git_sha": "0080b11",
+  "timestamp": "2026-07-19T16:02:56.348313+00:00",
+  "turn_count": 33,
+  "wall_seconds": 100.0
+}

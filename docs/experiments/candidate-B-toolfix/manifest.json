@@ -1,0 +1,11 @@
+{
+  "name": "candidate-B-toolfix",
+  "prompt_variant": "v0",
+  "flight_tool_fix": "1",
+  "dataset_version": "v1-2026-07-19",
+  "dataset_path": "/Users/chinmay_shringi/Desktop/sar/sample-travel-agent/evals/golden_dataset.json",
+  "git_sha": "0080b11",
+  "timestamp": "2026-07-19T16:03:00.092185+00:00",
+  "turn_count": 33,
+  "wall_seconds": 105.3
+}

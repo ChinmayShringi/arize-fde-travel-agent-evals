@@ -1,4 +1,6 @@
 import json
+import os
+import time
 
 from agent.config import DATA_DIR
 
@@ -11,6 +13,24 @@ with open(DATA_DIR / "weather.json") as f:
 
 
 def search_flights(origin: str, destination: str, date: str) -> list:
+    if os.getenv("FLIGHT_TOOL_FIX") == "1":
+        # Candidate B (D-02): ordered origin->destination match (case-insensitive)
+        # and expose origin/destination so the model can see the route.
+        want_origin, want_destination = origin.lower(), destination.lower()
+        return [
+            {
+                "airline": f["airline"],
+                "flight_number": f["flight_number"],
+                "origin": f["origin"],
+                "destination": f["destination"],
+                "depart_time": f["depart_time"],
+                "arrive_time": f["arrive_time"],
+                "price_usd": f["price_usd"],
+            }
+            for f in FLIGHTS
+            if f["origin"].lower() == want_origin
+            and f["destination"].lower() == want_destination
+        ]
     cities = {origin.lower(), destination.lower()}
     return [
         {
@@ -136,8 +156,25 @@ TOOL_FUNCTIONS = {
 }
 
 
+# Transient exception types worth retrying. The shipped local JSON tools never
+# raise these; they exist for future third-party HTTP-backed tools that fail
+# intermittently (dropped connections, timeouts, transient OS/socket errors).
+_TRANSIENT_ERRORS = (ConnectionError, TimeoutError, OSError)
+
+
 def execute_tool(name: str, tool_input: dict):
-    try:
-        return TOOL_FUNCTIONS[name](**tool_input)
-    except Exception as e:
-        return {"error": str(e)}
+    max_retries = int(os.getenv("TOOL_MAX_RETRIES", "3"))
+    backoff_base = float(os.getenv("TOOL_RETRY_BASE_SECONDS", "0.1"))
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            return TOOL_FUNCTIONS[name](**tool_input)
+        except _TRANSIENT_ERRORS as e:
+            if attempt >= max_retries:
+                return {
+                    "error": f"temporarily unavailable after {attempt} attempts: {e}"
+                }
+            time.sleep(backoff_base * (2 ** (attempt - 1)))
+        except Exception as e:
+            return {"error": str(e)}

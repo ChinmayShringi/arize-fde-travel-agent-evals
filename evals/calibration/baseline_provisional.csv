@@ -1,0 +1,50 @@
+trace_id,user_input,eval_id,judge_passed,judge_reason,human_label,notes,assistant_proposed_label
+0x18b1b686361b7e265e231e37dbdf6254,"Find me a flight from New York to Miami on March 12, 2026.",E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0x18b1b686361b7e265e231e37dbdf6254,"Find me a flight from New York to Miami on March 12, 2026.",E9,pass,The request was in scope and answered appropriately.,,,pass
+0x63b5bc221e858fff5899a9df6169d1f9,"What flights are there from San Francisco to Tokyo on April 20, 2026?",E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0x63b5bc221e858fff5899a9df6169d1f9,"What flights are there from San Francisco to Tokyo on April 20, 2026?",E9,pass,The request was in scope and answered appropriately.,,,pass
+0x2fa69e9447f6d349bf8275d8ff338a1e,"I need a hotel in Paris from June 10 to June 14, 2026.",E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0x2fa69e9447f6d349bf8275d8ff338a1e,"I need a hotel in Paris from June 10 to June 14, 2026.",E9,pass,The request was in scope and answered appropriately.,,,pass
+0xe8c0f11157040272e2a37a0108ac9c74,"Can you find hotels in Chicago for May 5 to May 8, 2026?",E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0xe8c0f11157040272e2a37a0108ac9c74,"Can you find hotels in Chicago for May 5 to May 8, 2026?",E9,pass,The request was in scope and answered appropriately.,,,pass
+0x8dfef7f85f059fe80840f794f926dabe,"What's the weather like in Miami on July 15, 2026?",E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0x8dfef7f85f059fe80840f794f926dabe,"What's the weather like in Miami on July 15, 2026?",E9,pass,The request was in scope and answered appropriately.,,,pass
+0xb52ee1512977bd62420b605cff18ea81,"How's the weather looking in Tokyo on April 22, 2026?",E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0xb52ee1512977bd62420b605cff18ea81,"How's the weather looking in Tokyo on April 22, 2026?",E9,pass,The request was in scope and answered appropriately.,,,pass
+0xd6bd4c8ff84829fc67d95b2d74cc6d5d,Plan a 3-day trip to Chicago for me.,E8,pass,Info was missing and the model asked one consolidated clarifying question.,,,pass
+0xd6bd4c8ff84829fc67d95b2d74cc6d5d,Plan a 3-day trip to Chicago for me.,E9,pass,The request was in scope and answered appropriately.,,,pass
+0xf312f76aef5e761811c400846065aaca,"I'm thinking about a weekend in Miami in early August. Any flights from New York on August 7, 2026?",E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0xf312f76aef5e761811c400846065aaca,"I'm thinking about a weekend in Miami in early August. Any flights from New York on August 7, 2026?",E9,pass,The request was in scope and answered appropriately.,,,pass
+0x4168d7071f9115d85771fb192309e868,"Great, can you add a hotel for that weekend too?",E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0x4168d7071f9115d85771fb192309e868,"Great, can you add a hotel for that weekend too?",E9,pass,The request was in scope and answered appropriately.,,,pass
+0x6b80754cc105601c0d262a08e86ce64b,"Show me flights from London to Paris on September 3, 2026.",E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0x6b80754cc105601c0d262a08e86ce64b,"Show me flights from London to Paris on September 3, 2026.",E9,pass,The request was in scope and answered appropriately.,,,pass
+0x20413eef97d62f2f411b43363e2035dd,"I need to get from Tokyo to Los Angeles on May 2, 2026 — what flights are there?",E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0x20413eef97d62f2f411b43363e2035dd,"I need to get from Tokyo to Los Angeles on May 2, 2026 — what flights are there?",E9,pass,The request was in scope and answered appropriately.,,,pass
+0x7789205abf7be32d01837ceb44ec2078,"Put together a 5-day itinerary for Paris, arriving June 10, 2026.",E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0x7789205abf7be32d01837ceb44ec2078,"Put together a 5-day itinerary for Paris, arriving June 10, 2026.",E9,pass,The request was in scope and answered appropriately.,,,pass
+0x8921eba700160267e844e1573fe45d1d,"I want to fly from Chicago to Denver on October 2, 2026 — what are my options?",E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0x8921eba700160267e844e1573fe45d1d,"I want to fly from Chicago to Denver on October 2, 2026 — what are my options?",E9,pass,The request was in scope and answered appropriately.,,,pass
+0x2fb0212f3c77667aa87f16dcc4650ec4,"Find me a hotel in New York for the nights of March 20 to 23, 2026.",E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0x2fb0212f3c77667aa87f16dcc4650ec4,"Find me a hotel in New York for the nights of March 20 to 23, 2026.",E9,pass,The request was in scope and answered appropriately.,,,pass
+0xc65f6a79b61b7f826f125689592ff07c,I need a flight from Miami to Tokyo next Friday.,E8,pass,Info was missing and the model asked one consolidated clarifying question.,,,pass
+0xc65f6a79b61b7f826f125689592ff07c,I need a flight from Miami to Tokyo next Friday.,E9,pass,The request was in scope and answered appropriately.,,,pass
+0xb73e05080276e22d20026bb7bb6c170b,Can you get me a hotel in Denver for this weekend?,E8,pass,Info was missing and the model asked one consolidated clarifying question.,,,pass
+0xb73e05080276e22d20026bb7bb6c170b,Can you get me a hotel in Denver for this weekend?,E9,pass,The request was in scope and answered appropriately.,,,pass
+0xd5c20df8d920fa777be57d1c1f7d02f1,"What hotels are available in Paris from April 3 to April 7, 2026?",E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0xd5c20df8d920fa777be57d1c1f7d02f1,"What hotels are available in Paris from April 3 to April 7, 2026?",E9,pass,The request was in scope and answered appropriately.,,,pass
+0x78c74d0872feaeb834711091984e738d,"Are there any flights from Denver to Miami on August 14, 2026?",E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0x78c74d0872feaeb834711091984e738d,"Are there any flights from Denver to Miami on August 14, 2026?",E9,pass,The request was in scope and answered appropriately.,,,pass
+0x9ae337c81f5e8608e17ea0ec0b216656,Do I need a visa to visit Japan as a US citizen?,E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0x9ae337c81f5e8608e17ea0ec0b216656,Do I need a visa to visit Japan as a US citizen?,E9,pass,Out-of-scope request (visa) was declined or handed off.,,,pass
+0x17360651d8e4e779a6de13632201d99f,I booked a flight through you last month and need a refund — can you process that?,E8,pass,No clarification was needed and the model did not over-ask.,,,pass
+0x17360651d8e4e779a6de13632201d99f,I booked a flight through you last month and need a refund — can you process that?,E9,pass,Out-of-scope request (refund) was declined or handed off.,,,pass
+0xbae4368208847cda924dec39bda26305,How much would a hotel in London cost per night in euros?,E8,pass,Info was missing and the model asked one consolidated clarifying question.,,,pass
+0xbae4368208847cda924dec39bda26305,How much would a hotel in London cost per night in euros?,E9,pass,Out-of-scope request (currency conversion) was declined or handed off.,,,pass
+0x3c60ef8cc507b242f77e9dd6dfc8908a,What's the weather going to be in London next Tuesday?,E8,pass,Info was missing and the model asked one consolidated clarifying question.,,,pass
+0x3c60ef8cc507b242f77e9dd6dfc8908a,What's the weather going to be in London next Tuesday?,E9,pass,The request was in scope and answered appropriately.,,,pass
+0x9e55aec05b724f1833ef3baf6d15b4a4,Find me a hotel in Austin for South by Southwest.,E8,pass,Info was missing and the model asked one consolidated clarifying question.,,,pass
+0x9e55aec05b724f1833ef3baf6d15b4a4,Find me a hotel in Austin for South by Southwest.,E9,pass,The request was in scope and answered appropriately.,,,pass
+synA,I need a flight from Miami to Tokyo next Friday.,E8,fail,synthetic adversarial,,,fail
+synB,Find me a hotel in Denver.,E8,fail,synthetic adversarial,,,fail
+synC,Do I need a visa to visit Japan as a US citizen?,E9,fail,synthetic adversarial,,,fail

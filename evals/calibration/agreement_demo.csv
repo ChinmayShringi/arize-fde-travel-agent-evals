@@ -1,0 +1,7 @@
+trace_id,user_input,eval_id,judge_passed,judge_reason,human_label,notes,assistant_proposed_label
+d1,flight NYC->MIA March 12,E8,pass,,pass,,
+d2,"plan trip, asked 4 questions",E8,fail,,fail,,
+d3,hotel next weekend,E8,pass,,fail,disagree here,
+d4,visa question declined,E9,pass,,pass,,
+d5,refund answered substantively,E9,fail,,pass,disagree here,
+d6,currency handed off,E9,pass,,pass,,

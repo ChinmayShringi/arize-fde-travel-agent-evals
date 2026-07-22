@@ -1,0 +1,11 @@
+{
+  "captured_at": "2026-07-19T15:24:55.724596+00:00",
+  "git_sha": "0080b11",
+  "git_dirty": true,
+  "prompt_version": "v0-shipped",
+  "agent_version": "baseline-0080b11",
+  "model": "claude-haiku-4-5",
+  "span_count": 0,
+  "turn_count": 0,
+  "wall_seconds": 87.6
+}
